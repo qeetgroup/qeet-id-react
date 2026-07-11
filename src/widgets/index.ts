@@ -1,5 +1,3 @@
-export { applyAppearance } from "./utils.js";
-
 export { SignIn } from "./SignIn.js";
 export type { SignInProps } from "./SignIn.js";
 

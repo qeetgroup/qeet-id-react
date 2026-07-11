@@ -1,5 +1,6 @@
 "use client";
 
+import { type CSSProperties } from "react";
 import { useAppearance } from "../client/context.js";
 import { usePasskeys } from "../hooks/authentication/usePasskeys.js";
 import { useSession } from "../hooks/authentication/useSession.js";
@@ -90,17 +91,17 @@ export function UserProfile({ appearance: localAppearance }: UserProfileProps) {
   );
 }
 
-const sectionHeadStyle: React.CSSProperties = { fontSize: 15, fontWeight: 600, marginBottom: 12 };
-const listItemStyle: React.CSSProperties = {
+const sectionHeadStyle: CSSProperties = { fontSize: 15, fontWeight: 600, marginBottom: 12 };
+const listItemStyle: CSSProperties = {
   display: "flex", justifyContent: "space-between", alignItems: "center",
   padding: "8px 0", borderBottom: "1px solid var(--qeetid-color-border, #e5e7eb)", fontSize: 14,
 };
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   marginTop: 12, padding: "6px 14px", border: "1px solid var(--qeetid-color-border, #d1d5db)",
   borderRadius: "var(--qeetid-border-radius, 8px)", background: "transparent",
   cursor: "pointer", fontSize: 13, color: "inherit",
 };
-const dangerLinkStyle: React.CSSProperties = {
+const dangerLinkStyle: CSSProperties = {
   background: "none", border: "none", color: "var(--qeetid-color-danger, #ef4444)",
   cursor: "pointer", fontSize: 13, padding: 0,
 };

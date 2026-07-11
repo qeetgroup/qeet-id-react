@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useState, type CSSProperties } from "react";
+import type * as React from "react";
 
 import { useAppearance } from "../client/context.js";
 import { useSignIn } from "../hooks/authentication/useSignIn.js";
@@ -39,17 +40,16 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
 
   const el = appearance.elements ?? {};
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     await signIn({ email, password });
   }
 
-  async function handleMfa(e: FormEvent) {
+  async function handleMfa(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     await verifyMfa({ code });
-    if (status.step === "complete" || (status.step !== "error" && status.step !== "loading")) {
-      onSuccess?.();
-    }
+    // onSuccess is called in the render phase (status.step === "complete" check below)
+    // to avoid stale-closure issues — status is captured at render time, not post-await.
   }
 
   if (status.step === "complete") {
@@ -74,10 +74,11 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
         )}
         <form onSubmit={handleMfa}>
           <div className={el.formField} style={{ marginBottom: 16 }}>
-            <label className={el.formLabel} style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+            <label className={el.formLabel} htmlFor="qeetid-mfa-code" style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
               Code
             </label>
             <input
+              id="qeetid-mfa-code"
               className={el.formInput}
               type="text"
               inputMode="numeric"

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type CSSProperties, type FormEvent } from "react";
 
 import { useAppearance } from "../client/context.js";
 import { applyAppearance } from "./utils.js";
 import type { Appearance } from "../types/common.js";
-import type { Organization } from "../types/organization.js";
 
 export interface CreateOrganizationProps {
-  /** Called with the newly created organization after success. */
-  onSuccess?: (organization: Organization) => void;
+  /** Called with the entered organization name after the user submits the form.
+   *  Organization creation requires a server call — use this callback to route
+   *  to your own API layer (which calls `@qeet-id/node`'s `organizations.create`). */
+  onSuccess?: (name: string) => void;
   appearance?: Appearance;
 }
 
@@ -44,8 +45,7 @@ export function CreateOrganization({ onSuccess, appearance: localAppearance }: C
         detail: { name: name.trim() },
       });
       (e.target as HTMLElement).dispatchEvent(event);
-      // If onSuccess is provided, call it with a provisional org object.
-      onSuccess?.({ id: "", name: name.trim() });
+      onSuccess?.(name.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create organization");
     } finally {
@@ -91,15 +91,15 @@ export function CreateOrganization({ onSuccess, appearance: localAppearance }: C
   );
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   display: "block", width: "100%", padding: "8px 12px",
   border: "1px solid var(--qeetid-color-border, #d1d5db)",
   borderRadius: "var(--qeetid-border-radius, 8px)",
   fontSize: 14, boxSizing: "border-box", outline: "none",
   background: "transparent", color: "inherit",
 };
-const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 };
-const primaryButtonStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = { display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 };
+const primaryButtonStyle: CSSProperties = {
   display: "block", width: "100%", padding: "10px 16px",
   background: "var(--qeetid-color-primary, #F26D0E)", color: "#fff",
   border: "none", borderRadius: "var(--qeetid-border-radius, 8px)",

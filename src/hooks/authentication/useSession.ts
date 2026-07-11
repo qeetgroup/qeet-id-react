@@ -8,6 +8,7 @@ import type { Session } from "../../types/session.js";
 export interface UseSessionReturn {
   isLoaded: boolean;
   sessions: Session[];
+  error: string | null;
   revoke(sessionId: string): Promise<void>;
   refresh(): Promise<void>;
 }
@@ -22,12 +23,16 @@ export function useSession(): UseSessionReturn {
   const client = useQeetIDClient();
   const [isLoaded, setIsLoaded] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!client) return;
+    setError(null);
     try {
       const list = await client.sessions.list();
       setSessions(list);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load sessions");
     } finally {
       setIsLoaded(true);
     }
@@ -46,5 +51,5 @@ export function useSession(): UseSessionReturn {
     [client],
   );
 
-  return { isLoaded, sessions, revoke, refresh: load };
+  return { isLoaded, sessions, error, revoke, refresh: load };
 }

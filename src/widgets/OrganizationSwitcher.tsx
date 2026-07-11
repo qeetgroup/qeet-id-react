@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { useAppearance } from "../client/context.js";
 import { useOrganization } from "../hooks/identity/useOrganization.js";
@@ -81,20 +81,20 @@ export function OrganizationSwitcher({ onOrganizationChange, appearance: localAp
   );
 }
 
-const triggerStyle: React.CSSProperties = {
+const triggerStyle: CSSProperties = {
   display: "inline-flex", alignItems: "center", padding: "6px 12px",
   border: "1px solid var(--qeetid-color-border, #d1d5db)",
   borderRadius: "var(--qeetid-border-radius, 8px)",
   background: "transparent", cursor: "pointer", fontSize: 14, color: "inherit",
 };
-const menuStyle: React.CSSProperties = {
+const menuStyle: CSSProperties = {
   position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 50,
   minWidth: 180, background: "var(--qeetid-color-background, #fff)", color: "inherit",
   border: "1px solid var(--qeetid-color-border, #d1d5db)",
   borderRadius: "var(--qeetid-border-radius, 8px)",
   boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 4, listStyle: "none", margin: 0,
 };
-const menuItemStyle: React.CSSProperties = {
+const menuItemStyle: CSSProperties = {
   display: "block", width: "100%", textAlign: "left",
   padding: "8px 12px", border: "none", background: "transparent",
   borderRadius: 6, cursor: "pointer", fontSize: 14, color: "inherit",

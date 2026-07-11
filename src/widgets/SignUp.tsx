@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useState, type CSSProperties } from "react";
+import type * as React from "react";
 
 import { useAppearance } from "../client/context.js";
 import { useSignUp } from "../hooks/authentication/useSignUp.js";
@@ -42,7 +43,7 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
     return null;
   }
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     await signUp({ email, password, displayName: displayName || undefined, tenantId });
   }
