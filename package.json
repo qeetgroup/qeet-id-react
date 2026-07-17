@@ -74,8 +74,5 @@
     "vite": "^6.0.7",
     "vite-plugin-dts": "^4.4.0",
     "vitest": "^3.0.5"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
   }
 }

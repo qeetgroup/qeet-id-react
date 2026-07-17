@@ -8,6 +8,7 @@ import type { Passkey } from "../../types/session.js";
 export interface UsePasskeysReturn {
   isLoaded: boolean;
   passkeys: Passkey[];
+  error: string | null;
   register(): Promise<void>;
   remove(passkeyId: string): Promise<void>;
   refresh(): Promise<void>;
@@ -23,12 +24,16 @@ export function usePasskeys(): UsePasskeysReturn {
   const client = useQeetIDClient();
   const [isLoaded, setIsLoaded] = useState(false);
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!client) return;
+    setError(null);
     try {
       const list = await client.passkeys.list();
       setPasskeys(list);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load passkeys");
     } finally {
       setIsLoaded(true);
     }
@@ -53,5 +58,5 @@ export function usePasskeys(): UsePasskeysReturn {
     [client],
   );
 
-  return { isLoaded, passkeys, register, remove, refresh: load };
+  return { isLoaded, passkeys, error, register, remove, refresh: load };
 }

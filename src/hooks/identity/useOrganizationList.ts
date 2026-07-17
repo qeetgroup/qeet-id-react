@@ -8,6 +8,7 @@ import type { Organization } from "../../types/organization.js";
 export interface UseOrganizationListReturn {
   isLoaded: boolean;
   organizationList: Organization[];
+  error: string | null;
   refresh(): Promise<void>;
 }
 
@@ -24,6 +25,7 @@ export function useOrganizationList(): UseOrganizationListReturn {
   const state = useQeetIDState();
   const [isLoaded, setIsLoaded] = useState(false);
   const [organizationList, setOrganizationList] = useState<Organization[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!client) {
@@ -33,12 +35,15 @@ export function useOrganizationList(): UseOrganizationListReturn {
       setIsLoaded(true);
       return;
     }
+    setError(null);
     try {
       const user = await client.currentUser();
       const tenantId = user?.tenantId ?? user?.["tenant_id"];
       if (typeof tenantId === "string") {
         setOrganizationList([{ id: tenantId }]);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load organizations");
     } finally {
       setIsLoaded(true);
     }
@@ -48,5 +53,5 @@ export function useOrganizationList(): UseOrganizationListReturn {
     void load();
   }, [load]);
 
-  return { isLoaded, organizationList, refresh: load };
+  return { isLoaded, organizationList, error, refresh: load };
 }
