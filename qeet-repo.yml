@@ -1,0 +1,73 @@
+# qeet-id-react — repository context metadata (Level 2).
+# Inherits qeetgroup/qeet-context (L0) and qeetgroup/qeet-id-context (L1).
+
+schema_version: 1
+
+context: {type: repository, level: L2, canonical: true, last_verified: "2026-08-28"}
+
+inheritance:
+  organization: {repository: qeetgroup/qeet-context, level: L0}
+  product:      {repository: qeetgroup/qeet-id-context, level: L1}
+
+repository:
+  name: qeet-id-react
+  product: qeet-id
+  type: sdk
+  role: sdk
+  status: development        # v0.1.0 — NOT PUBLISHED: npm returns 404
+  visibility: public
+  default_branch: main
+
+runtime:
+  language: TypeScript
+  node: ">=18.17"
+  package_manager: pnpm@10.32.1
+  peer: {react: "^18.0.0 || ^19.0.0", react-dom: "^18.0.0 || ^19.0.0"}
+  runtime_deps: none
+  build: vite-lib-mode       # + vite-plugin-dts (rollupTypes)
+
+module: {name: "@qeet-id/react", version: "0.1.0"}
+
+architecture:
+  style: browser-client       # NOT a management SDK
+  modes: [redirect, embedded] # ADR-0001 — apiUrl absent vs present
+  surface: {hooks: 10, components: 11, widgets: 6}
+  layout: [src/client, src/hooks, src/components, src/widgets, src/errors, src/constants, src/types, src/utils]
+
+contracts:
+  consumes: {api: qeet-id-server}
+  base_url: none              # apiUrl is REQUIRED — there is no default
+  auth_scheme: cookie + CSRF double-submit
+  csrf: {cookie: qe_csrf, header: X-CSRF-Token, seed: "GET /healthz"}
+  session_cookie: qe_ls       # HttpOnly — this SDK can never read it
+
+deliberate_gaps:              # ADR-0002 — the backend has no endpoint for these
+  - no usePermission / useRole hooks
+  - no useUsers / useOrganizations admin listings
+  - no AuthorizationError
+absent_by_design: [retry, timeout, logger, pagination, JWKS verification, webhook verification]
+
+commands:
+  install: pnpm install
+  check:   pnpm check         # typecheck + lint + test
+  build:   pnpm build
+  test:    pnpm test
+
+ci:
+  workflows: [ci.yml, codeql.yml, lint.yml, release.yml, security.yml]
+  note: ci.yml DOES run lint here (qeet-id-node's does not)
+
+security:
+  sensitive_paths:
+    - src/client/webauthn.ts  # WebAuthn ceremonies
+    - src/client/http.ts      # CSRF double-submit handling
+  never_touches_token: true   # session is HttpOnly; storage.ts is prefs only
+  never: [store a token, add an API key path, weaken CSRF]
+
+llm_context:
+  primary_instructions: AGENTS.md
+  canonical: docs/llm/context.md
+  boundaries: docs/llm/boundaries.md
+  workflows: docs/llm/workflows.md
+  architecture_map: docs/llm/architecture-map.md
+  adapters: [CLAUDE.md, GEMINI.md, .github/copilot-instructions.md]
