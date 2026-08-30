@@ -56,6 +56,7 @@ commands:
 ci:
   workflows: [ci.yml, codeql.yml, lint.yml, release.yml, security.yml]
   note: ci.yml DOES run lint here (qeet-id-node's does not)
+  release: push main -> bump package.json -> gate -> pnpm publish --access public --provenance -> tag vX.Y.Z
 
 security:
   sensitive_paths:
