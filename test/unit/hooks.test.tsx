@@ -106,7 +106,7 @@ describe("useSession", () => {
 
   it("loads sessions on mount and revoke removes it from the list", async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, [{ id: "s1", current: true }, { id: "s2" }]));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [{ id: "s1", current: true }, { id: "s2" }], has_more: false, total: 2 }));
     fetchMock.mockResolvedValueOnce(jsonResponse(204, null));
 
     const { result } = renderHook(() => useSession(), { wrapper: embeddedWrapper });

@@ -13,6 +13,7 @@ type PublicKeyCredentialWithJSON = PublicKeyCredential & { toJSON?: () => unknow
 type PKCStatic = typeof PublicKeyCredential & {
   parseRequestOptionsFromJSON?: (o: unknown) => PublicKeyCredentialRequestOptions;
   parseCreationOptionsFromJSON?: (o: unknown) => PublicKeyCredentialCreationOptions;
+  isConditionalMediationAvailable?: () => Promise<boolean>;
 };
 
 /** True when the current browser can perform passkey ceremonies. */
@@ -54,6 +55,42 @@ export async function getAssertion(publicKey: unknown): Promise<unknown> {
   }
   if (!assertion) throw new WebAuthnError("cancelled", "No passkey was selected.");
   return assertion.toJSON ? assertion.toJSON() : assertion;
+}
+
+/**
+ * True when the browser can offer passkeys in its own autofill prompt
+ * (conditional mediation). False, never an error, where it cannot.
+ */
+export async function isConditionalMediationAvailable(): Promise<boolean> {
+  if (!isWebAuthnSupported()) return false;
+  try {
+    return (await (window.PublicKeyCredential as PKCStatic).isConditionalMediationAvailable?.()) === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Like getAssertion, but with conditional mediation: the browser offers the
+ * user's passkeys in the autofill prompt of a field marked
+ * autocomplete="... webauthn" and resolves when they pick one. Resolves null
+ * — never throws — when signal aborts it, the user dismisses it, or the
+ * browser gives up, so an abandoned background ceremony is never an error.
+ */
+export async function getConditionalAssertion(publicKey: unknown, signal: AbortSignal): Promise<unknown | null> {
+  const PK = pkc();
+  const options = PK.parseRequestOptionsFromJSON ? PK.parseRequestOptionsFromJSON(publicKey) : (publicKey as PublicKeyCredentialRequestOptions);
+  try {
+    const assertion = (await navigator.credentials.get({
+      publicKey: options,
+      mediation: "conditional",
+      signal,
+    } as CredentialRequestOptions)) as PublicKeyCredentialWithJSON | null;
+    if (!assertion) return null;
+    return assertion.toJSON ? assertion.toJSON() : assertion;
+  } catch {
+    return null;
+  }
 }
 
 /** Creates a new credential (passkey enrollment) and returns it as JSON. */
