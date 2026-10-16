@@ -16,5 +16,8 @@ export type { UseSignOutReturn } from "./useSignOut.js";
 export { usePasskeys } from "./usePasskeys.js";
 export type { UsePasskeysReturn } from "./usePasskeys.js";
 
+export { usePasskeyAutofill } from "./usePasskeyAutofill.js";
+export type { UsePasskeyAutofillOptions, UsePasskeyAutofillReturn } from "./usePasskeyAutofill.js";
+
 export { useMFA } from "./useMFA.js";
 export type { UseMFAReturn } from "./useMFA.js";

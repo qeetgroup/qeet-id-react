@@ -4,7 +4,11 @@ import type { Branding, LoginContext } from "../types/common.js";
 import type { QeetIDUser } from "../types/user.js";
 import type { Session, Passkey } from "../types/session.js";
 import { Http } from "./http.js";
-import { createCredential, getAssertion } from "./webauthn.js";
+import { createCredential, getAssertion, getConditionalAssertion, isConditionalMediationAvailable } from "./webauthn.js";
+
+// The server keeps a passkey ceremony for five minutes; an autofill ceremony is
+// renewed a little before that.
+const AUTOFILL_RENEW_AFTER_MS = 4.5 * 60 * 1000;
 
 export interface QeetIDClientOptions {
   /** Base URL of the Qeet ID API, e.g. "https://api.id.qeet.in". */
@@ -154,6 +158,46 @@ class PasskeysResource {
   }
 
   /**
+   * Passkey sign-in from the browser's autofill prompt. Starts a discoverable
+   * ceremony with conditional mediation — attach it to a sign-in form whose
+   * email field has autocomplete="username webauthn" — and resolves true once
+   * the passkey the user picked has signed in (session cookie set), or false
+   * when the browser lacks conditional mediation, no passkey was picked, or
+   * signal aborted it (abort it before signing in another way). The ceremony
+   * is renewed before its server state expires. A picked passkey the server
+   * refuses rejects with its AuthenticationError.
+   */
+  async autofill(signal: AbortSignal): Promise<boolean> {
+    if (!(await isConditionalMediationAvailable())) return false;
+    while (!signal.aborted) {
+      const renew = new AbortController();
+      const timer = setTimeout(() => renew.abort(), AUTOFILL_RENEW_AFTER_MS);
+      const stop = () => renew.abort();
+      signal.addEventListener("abort", stop, { once: true });
+      try {
+        const begin = await this.http.post<PasskeyBegin>("/v1/passkeys/login/begin", {});
+        const credential = await getConditionalAssertion(begin.publicKey, renew.signal);
+        if (credential === null) {
+          if (signal.aborted || !renew.signal.aborted) return false;
+          continue; // renewed: start a fresh ceremony
+        }
+        try {
+          await this.http.post("/v1/passkeys/login/finish", { session_id: begin.session_id, credential });
+          return true;
+        } catch (err) {
+          // The ceremony state ran out while the prompt was open: start again.
+          if (err instanceof AuthenticationError && err.code === "auth.session_expired") continue;
+          throw err;
+        }
+      } finally {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", stop);
+      }
+    }
+    return false;
+  }
+
+  /**
    * Enrolls a new passkey for the signed-in user, named `options.name` when
    * given. Without a name the server names it after this browser (e.g. "Chrome
    * on macOS"); change it with `rename`. Works with the hosted-login session
@@ -207,9 +251,10 @@ class MagicLinkResource {
 class SessionsResource {
   constructor(private readonly http: Http) {}
 
-  /** Lists the current user's active sessions. */
-  list(): Promise<Session[]> {
-    return this.http.get<Session[]>("/v1/auth/sessions");
+  /** Lists the current user's sessions (the first page, newest first), the one this request is made with marked `current`. */
+  async list(): Promise<Session[]> {
+    const r = await this.http.get<{ items?: Session[] }>("/v1/auth/sessions");
+    return r.items ?? [];
   }
 
   /** Revokes a session by id. */

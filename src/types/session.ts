@@ -1,7 +1,15 @@
 /** One of the current user's active sessions, from `GET /v1/auth/sessions`. */
 export interface Session {
   id: string;
+  /** True for the session this request was made with. */
   current?: boolean;
+  /** The device and browser in words, e.g. "Chrome on macOS". */
+  device?: string;
+  device_kind?: "desktop" | "mobile" | "tablet" | "unknown";
+  /** Where the session was opened (ISO 3166-1 alpha-2), when the deployment knows. */
+  country?: string;
+  /** "active", "revoked" or "expired". */
+  status?: string;
   [key: string]: unknown;
 }
 

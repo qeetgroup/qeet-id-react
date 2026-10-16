@@ -251,3 +251,90 @@ describe("QeetIDClient", () => {
     });
   });
 });
+
+describe("passkeys.autofill", () => {
+  const begin = { session_id: "s1", publicKey: { challenge: "c" } };
+  let get: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+    document.cookie = "qe_csrf=tok_csrf_seeded";
+    get = vi.fn();
+    vi.stubGlobal("PublicKeyCredential", { isConditionalMediationAvailable: () => Promise.resolve(true) });
+    Object.defineProperty(navigator, "credentials", { value: { get }, configurable: true });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.cookie = "qe_csrf=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+  });
+
+  it("does nothing where the browser lacks conditional mediation", async () => {
+    vi.stubGlobal("PublicKeyCredential", { isConditionalMediationAvailable: () => Promise.resolve(false) });
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.passkeys.autofill(new AbortController().signal)).resolves.toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("signs in with the passkey picked from the browser prompt, asking for conditional mediation", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, begin)).mockResolvedValueOnce(jsonResponse(204, null));
+    get.mockResolvedValueOnce({ toJSON: () => ({ id: "cred" }) });
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+
+    await expect(client.passkeys.autofill(new AbortController().signal)).resolves.toBe(true);
+    expect(get.mock.calls[0]![0].mediation).toBe("conditional");
+    const [url, init] = fetchMock.mock.calls[1]!;
+    expect(url).toBe("https://api.id.qeet.in/v1/passkeys/login/finish");
+    expect(JSON.parse(init.body as string)).toEqual({ session_id: "s1", credential: { id: "cred" } });
+  });
+
+  it("is abandoned silently when stopped", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, begin));
+    get.mockRejectedValueOnce(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    const c = new AbortController();
+    c.abort();
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.passkeys.autofill(c.signal)).resolves.toBe(false);
+  });
+
+  it("starts a fresh ceremony when the first one's state has expired", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, begin))
+      .mockResolvedValueOnce(jsonResponse(400, { error: { code: "auth.session_expired", message: "expired" } }))
+      .mockResolvedValueOnce(jsonResponse(200, { ...begin, session_id: "s2" }))
+      .mockResolvedValueOnce(jsonResponse(204, null));
+    get.mockResolvedValue({ toJSON: () => ({ id: "cred" }) });
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+
+    await expect(client.passkeys.autofill(new AbortController().signal)).resolves.toBe(true);
+    expect(JSON.parse(fetchMock.mock.calls[3]![1].body as string).session_id).toBe("s2");
+  });
+
+  it("reports a picked passkey the server refuses", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, begin))
+      .mockResolvedValueOnce(jsonResponse(401, { error: { code: "passkey.clone_detected", message: "refused" } }));
+    get.mockResolvedValueOnce({ toJSON: () => ({ id: "cred" }) });
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.passkeys.autofill(new AbortController().signal)).rejects.toMatchObject({ code: "passkey.clone_detected" });
+  });
+});
+
+describe("sessions.list", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reads the { items } envelope of GET /v1/auth/sessions", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { items: [{ id: "s1", device: "Chrome on macOS", current: true }], has_more: false, total: 1 }),
+    );
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.sessions.list()).resolves.toEqual([{ id: "s1", device: "Chrome on macOS", current: true }]);
+  });
+});
