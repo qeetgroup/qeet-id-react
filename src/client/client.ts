@@ -18,6 +18,13 @@ interface SessionResponse {
   mfa_token?: string;
   methods?: string[];
 }
+interface PasskeyResponse {
+  id: string;
+  name?: string | null;
+  transports?: string[] | null;
+  last_used_at?: string | null;
+  created_at: string;
+}
 interface LoginContextResponse {
   client_name?: string;
   tenant_id?: string;
@@ -126,6 +133,16 @@ interface PasskeyBegin {
   publicKey: unknown;
 }
 
+function toPasskey(p: PasskeyResponse): Passkey {
+  return {
+    id: p.id,
+    name: p.name ?? null,
+    transports: p.transports ?? [],
+    lastUsedAt: p.last_used_at ?? null,
+    createdAt: p.created_at,
+  };
+}
+
 class PasskeysResource {
   constructor(private readonly http: Http) {}
 
@@ -136,16 +153,26 @@ class PasskeysResource {
     await this.http.post("/v1/passkeys/login/finish", { session_id: begin.session_id, credential });
   }
 
-  /** Enrolls a new passkey for the signed-in user. */
+  /** Enrolls a new passkey for the signed-in user. The server names it after this browser (e.g. "Chrome on macOS"); change it with `rename`. */
   async register(): Promise<void> {
     const begin = await this.http.post<PasskeyBegin>("/v1/passkeys/register/begin", {});
     const credential = await createCredential(begin.publicKey);
     await this.http.post("/v1/passkeys/register/finish", { session_id: begin.session_id, credential });
   }
 
-  /** Lists the signed-in user's registered passkeys. */
-  list(): Promise<Passkey[]> {
-    return this.http.get<Passkey[]>("/v1/passkeys");
+  /** Lists the signed-in user's registered passkeys, newest first. */
+  async list(): Promise<Passkey[]> {
+    const r = await this.http.get<{ items?: PasskeyResponse[] }>("/v1/passkeys");
+    return (r.items ?? []).map(toPasskey);
+  }
+
+  /**
+   * Renames one of the user's passkeys. The server trims the name and refuses
+   * (422) one that is empty or longer than 64 characters; another user's
+   * passkey is not found (404).
+   */
+  async rename(id: string, name: string): Promise<Passkey> {
+    return toPasskey(await this.http.patch<PasskeyResponse>(`/v1/passkeys/${encodeURIComponent(id)}`, { name }));
   }
 
   /** Deletes one of the user's passkeys. */

@@ -48,7 +48,7 @@ caller. This is deliberate: the whole point of the status union is that a
 component (prebuilt or your own) renders UI *from* `status`, not from a
 `try`/`catch` around the hook call. Data-fetching hooks (`useSession`,
 `usePasskeys`) are the exception — their *mutations* (`revoke`, `register`,
-`remove`) do throw on failure (there's no multi-step "flow" to render
+`rename`, `remove`) do throw on failure (there's no multi-step "flow" to render
 statuses for; a caller wraps the specific button's `onClick` in its own
 error handling if it wants to).
 

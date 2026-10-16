@@ -10,15 +10,16 @@ export interface UsePasskeysReturn {
   passkeys: Passkey[];
   error: string | null;
   register(): Promise<void>;
+  rename(passkeyId: string, name: string): Promise<void>;
   remove(passkeyId: string): Promise<void>;
   refresh(): Promise<void>;
 }
 
 /**
- * usePasskeys lists the current user's passkeys and provides register/delete
- * operations. Requires `apiUrl` on <QeetIDProvider> (embedded mode).
+ * usePasskeys lists the current user's passkeys and provides register, rename
+ * and delete operations. Requires `apiUrl` on <QeetIDProvider> (embedded mode).
  *
- *   const { passkeys, register, remove } = usePasskeys();
+ *   const { passkeys, register, rename, remove } = usePasskeys();
  */
 export function usePasskeys(): UsePasskeysReturn {
   const client = useQeetIDClient();
@@ -49,6 +50,15 @@ export function usePasskeys(): UsePasskeysReturn {
     await load();
   }, [client, load]);
 
+  const rename = useCallback(
+    async (passkeyId: string, name: string) => {
+      if (!client) throw new Error("usePasskeys requires apiUrl on <QeetIDProvider>");
+      const renamed = await client.passkeys.rename(passkeyId, name);
+      setPasskeys((prev) => prev.map((p) => (p.id === passkeyId ? renamed : p)));
+    },
+    [client],
+  );
+
   const remove = useCallback(
     async (passkeyId: string) => {
       if (!client) throw new Error("usePasskeys requires apiUrl on <QeetIDProvider>");
@@ -58,5 +68,5 @@ export function usePasskeys(): UsePasskeysReturn {
     [client],
   );
 
-  return { isLoaded, passkeys, error, register, remove, refresh: load };
+  return { isLoaded, passkeys, error, register, rename, remove, refresh: load };
 }

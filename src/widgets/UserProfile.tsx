@@ -59,7 +59,7 @@ export function UserProfile({ appearance: localAppearance }: UserProfileProps) {
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {passkeys.map((pk) => (
               <li key={pk.id} style={listItemStyle}>
-                <span>{pk.name ?? pk.id}</span>
+                <span>{pk.name ?? "Unnamed passkey"}</span>
                 <button type="button" onClick={() => removePasskey(pk.id)} style={dangerLinkStyle}>Remove</button>
               </li>
             ))}

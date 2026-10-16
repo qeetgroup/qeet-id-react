@@ -120,7 +120,7 @@ Pick redirect mode if you already have (or are fine building) a hosted login pag
 | `useSignIn` | Email/password sign-in with an MFA step |
 | `useSignUp` | New-account registration |
 | `useSignOut` | Clears the session in embedded mode |
-| `usePasskeys` | List/register/remove WebAuthn passkeys |
+| `usePasskeys` | List/register/rename/remove WebAuthn passkeys |
 | `useMFA` | Standalone step-up MFA verification (outside the sign-in flow) |
 
 </details>
@@ -212,7 +212,7 @@ function PasskeySettings() {
       <ul>
         {passkeys.map((pk) => (
           <li key={pk.id}>
-            {pk.name ?? pk.id} <button onClick={() => remove(pk.id)}>Remove</button>
+            {pk.name ?? "Unnamed passkey"} <button onClick={() => remove(pk.id)}>Remove</button>
           </li>
         ))}
       </ul>
