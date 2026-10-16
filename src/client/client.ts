@@ -197,11 +197,18 @@ class PasskeysResource {
     return false;
   }
 
-  /** Enrolls a new passkey for the signed-in user. The server names it after this browser (e.g. "Chrome on macOS"); change it with `rename`. */
-  async register(): Promise<void> {
+  /**
+   * Enrolls a new passkey for the signed-in user, named `options.name` when
+   * given. Without a name the server names it after this browser (e.g. "Chrome
+   * on macOS"); change it with `rename`. Works with the hosted-login session
+   * cookie; like every mutation here, both steps send the CSRF token. Refused
+   * (403 `passkey.disabled`) when the user's organization has passkeys off.
+   */
+  async register(options?: { name?: string }): Promise<void> {
     const begin = await this.http.post<PasskeyBegin>("/v1/passkeys/register/begin", {});
     const credential = await createCredential(begin.publicKey);
-    await this.http.post("/v1/passkeys/register/finish", { session_id: begin.session_id, credential });
+    const name = options?.name?.trim();
+    await this.http.post("/v1/passkeys/register/finish", { session_id: begin.session_id, credential, ...(name ? { name } : {}) });
   }
 
   /** Lists the signed-in user's registered passkeys, newest first. */
@@ -219,7 +226,7 @@ class PasskeysResource {
     return toPasskey(await this.http.patch<PasskeyResponse>(`/v1/passkeys/${encodeURIComponent(id)}`, { name }));
   }
 
-  /** Deletes one of the user's passkeys. */
+  /** Deletes one of the user's passkeys. Needs a bearer token: the hosted-login session cookie is not accepted for removal. */
   delete(id: string): Promise<void> {
     return this.http.del(`/v1/passkeys/${encodeURIComponent(id)}`);
   }

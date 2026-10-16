@@ -177,6 +177,79 @@ describe("QeetIDClient", () => {
     const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
     await expect(client.passkeys.rename("pk1", "   ")).rejects.toMatchObject({ status: 422, code: "validation_failed" });
   });
+
+  describe("passkey enrolment with the hosted-login session", () => {
+    const create = vi.fn();
+    beforeEach(() => {
+      create.mockReset();
+      create.mockResolvedValue({ toJSON: () => ({ id: "cred-1", type: "public-key" }) });
+      vi.stubGlobal("PublicKeyCredential", { parseCreationOptionsFromJSON: (o: unknown) => o });
+      Object.defineProperty(navigator, "credentials", { value: { create }, configurable: true });
+    });
+    afterEach(() => {
+      Reflect.deleteProperty(navigator, "credentials");
+    });
+
+    it("passkeys.register sends the session cookie and the CSRF token on both ceremony steps", async () => {
+      const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, { session_id: "ceremony-1", publicKey: { challenge: "abc" } }));
+      fetchMock.mockResolvedValueOnce(jsonResponse(204, null));
+
+      const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+      await client.passkeys.register();
+
+      expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+        "https://api.id.qeet.in/v1/passkeys/register/begin",
+        "https://api.id.qeet.in/v1/passkeys/register/finish",
+      ]);
+      for (const [, init] of fetchMock.mock.calls) {
+        expect(init.method).toBe("POST");
+        expect(init.credentials).toBe("include");
+        expect(new Headers(init.headers as HeadersInit).get("X-CSRF-Token")).toBe("tok_csrf_seeded");
+      }
+      expect(create).toHaveBeenCalledWith({ publicKey: { challenge: "abc" } });
+      // No name: the server names the passkey after the browser.
+      expect(JSON.parse(fetchMock.mock.calls[1]![1].body as string)).toEqual({
+        session_id: "ceremony-1",
+        credential: { id: "cred-1", type: "public-key" },
+      });
+    });
+
+    it("passkeys.register sends a name the user chose, trimmed", async () => {
+      const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, { session_id: "ceremony-2", publicKey: {} }));
+      fetchMock.mockResolvedValueOnce(jsonResponse(204, null));
+
+      const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+      await client.passkeys.register({ name: "  Work laptop  " });
+
+      expect(JSON.parse(fetchMock.mock.calls[1]![1].body as string)).toMatchObject({ name: "Work laptop" });
+    });
+
+    it("passkeys.register surfaces an organization with passkeys switched off", async () => {
+      const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse(403, { error: { code: "passkey.disabled", message: "Your organization has turned off passkeys." } }),
+      );
+
+      const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+      await expect(client.passkeys.register()).rejects.toMatchObject({ status: 403, code: "passkey.disabled" });
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("passkeys.list sends the session cookie and no CSRF token (a read)", async () => {
+      const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [], enrollment_allowed: true }));
+
+      const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+      await client.passkeys.list();
+
+      const [, init] = fetchMock.mock.calls[0]!;
+      expect(init.method).toBe("GET");
+      expect(init.credentials).toBe("include");
+      expect(new Headers(init.headers as HeadersInit).get("X-CSRF-Token")).toBeNull();
+    });
+  });
 });
 
 describe("passkeys.autofill", () => {

@@ -223,6 +223,8 @@ function PasskeySettings() {
 
 `isWebAuthnSupported()` is available to hide passkey UI entirely on browsers that can't perform the ceremony.
 
+Listing, renaming and adding passkeys work with the hosted-login session cookie (adding sends the CSRF token like every other mutation). `client.passkeys.register({ name })` names the new passkey; without a name the server names it after the browser. Adding is refused (`403 passkey.disabled`) when the user's organization has passkeys switched off. Removing a passkey is not accepted with the session cookie: it needs a bearer token.
+
 ### Appearance / theming
 
 Every widget accepts an `appearance` prop (also settable once on `<QeetIDProvider appearance={...}>`):
