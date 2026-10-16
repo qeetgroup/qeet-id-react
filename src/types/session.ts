@@ -8,6 +8,16 @@ export interface Session {
 /** One of the current user's registered passkeys, from `GET /v1/passkeys`. */
 export interface Passkey {
   id: string;
-  name?: string;
-  [key: string]: unknown;
+  /**
+   * User-supplied text: render it as text, never as HTML. New passkeys are
+   * named by the server (after the enrolling browser, e.g. "Chrome on macOS");
+   * one enrolled before that can be `null` until it is renamed.
+   */
+  name: string | null;
+  /** WebAuthn transport hints, e.g. "internal", "hybrid", "usb". */
+  transports: string[];
+  /** ISO 8601 timestamp, or null if the passkey has never been used to sign in. */
+  lastUsedAt: string | null;
+  /** ISO 8601 timestamp. */
+  createdAt: string;
 }

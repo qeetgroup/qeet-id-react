@@ -49,6 +49,20 @@ export class Http {
     return this.parse<T>(res);
   }
 
+  async patch<T = unknown>(path: string, body?: unknown): Promise<T> {
+    const res = await fetch(this.url(path), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(await this.csrfHeader()),
+      },
+      body: JSON.stringify(body ?? {}),
+      credentials: "include",
+    });
+    return this.parse<T>(res);
+  }
+
   async del<T = unknown>(path: string): Promise<T> {
     const res = await fetch(this.url(path), {
       method: "DELETE",

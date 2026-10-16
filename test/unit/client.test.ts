@@ -102,14 +102,79 @@ describe("QeetIDClient", () => {
     expect(url).toBe("https://api.id.qeet.in/v1/social/google/start?tenant_id=t1&return_to=%2Fdashboard");
   });
 
-  it("passkeys.list hits GET /v1/passkeys", async () => {
+  it("passkeys.list reads the { items } envelope of GET /v1/passkeys and camelCases it", async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, [{ id: "pk1" }]));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          {
+            id: "pk1",
+            user_id: "u1",
+            name: "Chrome on macOS",
+            transports: ["internal"],
+            last_used_at: null,
+            created_at: "2026-10-01T10:00:00Z",
+          },
+          {
+            id: "pk2",
+            user_id: "u1",
+            name: null,
+            transports: null,
+            last_used_at: "2026-10-02T10:00:00Z",
+            created_at: "2026-09-01T10:00:00Z",
+          },
+        ],
+      }),
+    );
 
     const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
     const list = await client.passkeys.list();
 
-    expect(list).toEqual([{ id: "pk1" }]);
+    expect(list).toEqual([
+      { id: "pk1", name: "Chrome on macOS", transports: ["internal"], lastUsedAt: null, createdAt: "2026-10-01T10:00:00Z" },
+      { id: "pk2", name: null, transports: [], lastUsedAt: "2026-10-02T10:00:00Z", createdAt: "2026-09-01T10:00:00Z" },
+    ]);
     expect(fetchMock.mock.calls[0]![0]).toBe("https://api.id.qeet.in/v1/passkeys");
+  });
+
+  it("passkeys.rename PATCHes the name with the CSRF header and returns the renamed passkey", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        id: "pk1",
+        user_id: "u1",
+        name: "Work laptop",
+        transports: ["internal"],
+        last_used_at: null,
+        created_at: "2026-10-01T10:00:00Z",
+      }),
+    );
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    const renamed = await client.passkeys.rename("pk1", "Work laptop");
+
+    expect(renamed).toEqual({
+      id: "pk1",
+      name: "Work laptop",
+      transports: ["internal"],
+      lastUsedAt: null,
+      createdAt: "2026-10-01T10:00:00Z",
+    });
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://api.id.qeet.in/v1/passkeys/pk1");
+    expect(init.method).toBe("PATCH");
+    expect(init.credentials).toBe("include");
+    expect(new Headers(init.headers as HeadersInit).get("X-CSRF-Token")).toBe("tok_csrf_seeded");
+    expect(JSON.parse(init.body as string)).toEqual({ name: "Work laptop" });
+  });
+
+  it("passkeys.rename surfaces a refused name as an AuthenticationError", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(422, { error: { code: "validation_failed", message: "One or more fields are invalid." } }),
+    );
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.passkeys.rename("pk1", "   ")).rejects.toMatchObject({ status: 422, code: "validation_failed" });
   });
 });
