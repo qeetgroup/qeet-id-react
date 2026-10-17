@@ -5,6 +5,7 @@ import type * as React from "react";
 
 import { useAppearance } from "../client/context.js";
 import { useSignIn } from "../hooks/authentication/useSignIn.js";
+import { MfaEnrollmentPanel } from "./MfaEnrollmentPanel.js";
 import { applyAppearance } from "./utils.js";
 import type { Appearance } from "../types/common.js";
 
@@ -33,7 +34,7 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
   const appearance = { ...providerAppearance, ...localAppearance };
   const vars = applyAppearance(appearance);
 
-  const { status, signIn, verifyMfa } = useSignIn();
+  const { status, signIn, verifyMfa, startEnrollment, skipEnrollment, finish } = useSignIn();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -59,6 +60,22 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
 
   const isLoading = status.step === "loading";
   const error = status.step === "error" ? status.error : null;
+
+  // The organisation requires a second factor and the account has none: set
+  // one up (or skip it during the grace period).
+  if (status.step === "needs_mfa_enrollment" || status.step === "recovery_codes") {
+    return (
+      <MfaEnrollmentPanel
+        status={status}
+        elements={el}
+        vars={vars}
+        onStart={startEnrollment}
+        onConfirm={(c) => verifyMfa({ code: c })}
+        onSkip={skipEnrollment}
+        onFinish={finish}
+      />
+    );
+  }
 
   if (status.step === "needs_mfa") {
     return (

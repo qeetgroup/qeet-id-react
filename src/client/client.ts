@@ -1,5 +1,18 @@
 import { AuthenticationError } from "../errors/AuthenticationError.js";
-import type { SignInParams, SignInResult, SignUpParams, VerifyMfaParams, ForgotPasswordParams, ResetPasswordParams, MagicLinkStartParams, SocialStartParams } from "../types/auth.js";
+import type {
+  SignInParams,
+  SignInResult,
+  SignUpParams,
+  SignUpResult,
+  MfaChallenge,
+  MfaEnrollment,
+  VerifyMfaParams,
+  VerifyMfaResult,
+  ForgotPasswordParams,
+  ResetPasswordParams,
+  MagicLinkStartParams,
+  SocialStartParams,
+} from "../types/auth.js";
 import type { Branding, LoginContext } from "../types/common.js";
 import type { QeetIDUser } from "../types/user.js";
 import type { Session, Passkey } from "../types/session.js";
@@ -21,6 +34,17 @@ interface SessionResponse {
   mfa_required?: boolean;
   mfa_token?: string;
   methods?: string[];
+  enrollment_required?: boolean;
+  enrollment_due_at?: string;
+}
+
+// The challenge a sign-in or registration answered with, if any.
+function challengeOf(r: SessionResponse): MfaChallenge | null {
+  if (!r.mfa_required || !r.mfa_token) return null;
+  const challenge: MfaChallenge = { status: "needs_mfa", mfaToken: r.mfa_token, methods: r.methods ?? [] };
+  if (r.enrollment_required) challenge.enrollmentRequired = true;
+  if (r.enrollment_due_at) challenge.enrollmentDueAt = r.enrollment_due_at;
+  return challenge;
 }
 interface PasskeyResponse {
   id: string;
@@ -73,23 +97,55 @@ export class QeetIDClient {
     };
   }
 
-  /** Password sign-in. Establishes the session cookie, or reports that a second factor is required (pass the returned mfaToken to `verifyMfa`). */
+  /**
+   * Password sign-in. Establishes the session cookie, or reports that a second
+   * factor is required (pass the returned mfaToken to `verifyMfa`) — or, with
+   * `enrollmentRequired`, must be set up first (`startMfaEnrollment`).
+   */
   async signIn({ email, password }: SignInParams): Promise<SignInResult> {
     const r = await this.http.post<SessionResponse>("/v1/auth/session", { email, password });
-    if (r.mfa_required && r.mfa_token) {
-      return { status: "needs_mfa", mfaToken: r.mfa_token, methods: r.methods ?? [] };
-    }
-    return { status: "complete", userId: r.user_id };
+    return challengeOf(r) ?? { status: "complete", userId: r.user_id };
   }
 
-  /** Completes a pending second-factor challenge (TOTP or recovery code). */
-  async verifyMfa({ mfaToken, code, remember }: VerifyMfaParams): Promise<void> {
-    await this.http.post("/v1/auth/session/mfa", { mfa_token: mfaToken, code, remember: remember ?? false });
+  /**
+   * Completes a pending second-factor challenge with a code (authenticator
+   * app or recovery code), establishing the session cookie. For a challenge
+   * that set up an authenticator app, returns the account's new recovery
+   * codes — show them once.
+   */
+  async verifyMfa({ mfaToken, code, remember }: VerifyMfaParams): Promise<VerifyMfaResult> {
+    const r = await this.http.post<{ recovery_codes?: string[] } | null>("/v1/auth/session/mfa", {
+      mfa_token: mfaToken,
+      code,
+      remember: remember ?? false,
+    });
+    return { recoveryCodes: r?.recovery_codes ?? [] };
   }
 
-  /** Tenant-scoped self-registration; establishes the session cookie on success. */
-  async signUp({ tenantId, email, password, displayName }: SignUpParams): Promise<void> {
-    await this.http.post("/v1/auth/register", { tenant_id: tenantId, email, password, display_name: displayName });
+  /** Starts the authenticator app that completes an enrolment challenge (`enrollmentRequired`); confirm it with `verifyMfa` and a code from the app. */
+  async startMfaEnrollment(mfaToken: string): Promise<MfaEnrollment> {
+    const r = await this.http.post<{ secret: string; provisioning_url: string }>("/v1/auth/mfa/enroll", { mfa_token: mfaToken });
+    return { secret: r.secret, provisioningUrl: r.provisioning_url };
+  }
+
+  /** Puts setting up a second factor off while the organisation's grace period runs (`enrollmentDueAt`), establishing the session cookie without one. */
+  async skipMfaEnrollment(mfaToken: string): Promise<void> {
+    await this.http.post("/v1/auth/session/mfa", { mfa_token: mfaToken, skip: true });
+  }
+
+  /**
+   * Tenant-scoped self-registration; establishes the session cookie on
+   * success — or, where the organisation requires MFA, answers an enrolment
+   * challenge to complete first.
+   */
+  async signUp({ tenantId, email, password, displayName }: SignUpParams): Promise<SignUpResult> {
+    const r = await this.http.post<SessionResponse | null>("/v1/auth/register", {
+      tenant_id: tenantId,
+      email,
+      password,
+      display_name: displayName,
+    });
+    return (r && challengeOf(r)) ?? { status: "complete" };
   }
 
   /** Signs the current user out (clears the session server-side). */
@@ -242,9 +298,15 @@ class MagicLinkResource {
     await this.http.post("/v1/auth/magic-link/start", body);
   }
 
-  /** Consumes a magic-link token, establishing the session cookie. */
-  async consume(token: string): Promise<void> {
-    await this.http.post("/v1/auth/magic-link/consume", { token });
+  /**
+   * Consumes a magic-link token. When the account holds a second factor, or
+   * must have one, it reports the challenge (`needs_mfa`) instead — complete it
+   * with `verifyMfa`, or set one up with `startMfaEnrollment`. The link is spent
+   * either way.
+   */
+  async consume(token: string): Promise<SignInResult> {
+    const r = await this.http.post<SessionResponse | null>("/v1/auth/magic-link/consume", { token });
+    return (r && challengeOf(r)) ?? { status: "complete", userId: r?.user_id };
   }
 }
 

@@ -5,6 +5,7 @@ import type * as React from "react";
 
 import { useAppearance } from "../client/context.js";
 import { useSignUp } from "../hooks/authentication/useSignUp.js";
+import { MfaEnrollmentPanel } from "./MfaEnrollmentPanel.js";
 import { applyAppearance } from "./utils.js";
 import type { Appearance } from "../types/common.js";
 
@@ -29,7 +30,7 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
   const appearance = { ...providerAppearance, ...localAppearance };
   const vars = applyAppearance(appearance);
 
-  const { status, signUp } = useSignUp();
+  const { status, signUp, verifyMfa, startEnrollment, skipEnrollment, finish } = useSignUp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -41,6 +42,22 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
   if (status.step === "complete") {
     onSuccess?.();
     return null;
+  }
+
+  // The organisation requires a second factor: the new account sets one up
+  // before it is signed in.
+  if (status.step === "needs_mfa_enrollment" || status.step === "recovery_codes") {
+    return (
+      <MfaEnrollmentPanel
+        status={status}
+        elements={el}
+        vars={vars}
+        onStart={startEnrollment}
+        onConfirm={(c) => verifyMfa({ code: c })}
+        onSkip={skipEnrollment}
+        onFinish={finish}
+      />
+    );
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
