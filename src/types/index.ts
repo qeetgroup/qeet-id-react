@@ -4,6 +4,10 @@ export type { Session, Passkey } from "./session.js";
 export type {
   QeetIDState,
   SignInResult,
+  SignUpResult,
+  MfaChallenge,
+  MfaEnrollment,
+  VerifyMfaResult,
   SignInParams,
   SignUpParams,
   VerifyMfaParams,
@@ -13,6 +17,7 @@ export type {
   SocialStartParams,
   SignInStatus,
   SignUpStatus,
+  MfaEnrollmentStatus,
   MfaStatus,
 } from "./auth.js";
 export type { Branding, LoginContext, Appearance, AppearanceTheme, AppearanceVariables, AppearanceElements } from "./common.js";

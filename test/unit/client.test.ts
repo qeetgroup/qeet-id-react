@@ -44,6 +44,89 @@ describe("QeetIDClient", () => {
     expect(result).toEqual({ status: "needs_mfa", mfaToken: "tok_1", methods: ["totp"] });
   });
 
+  it("signIn reports an enrolment challenge when the account must set up a second factor", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        mfa_required: true,
+        mfa_token: "tok_2",
+        methods: ["totp"],
+        factors: [],
+        enrollment_required: true,
+        enrollment_due_at: "2026-11-01T00:00:00Z",
+      }),
+    );
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    const result = await client.signIn({ email: "a@b.com", password: "secret123" });
+
+    expect(result).toEqual({
+      status: "needs_mfa",
+      mfaToken: "tok_2",
+      methods: ["totp"],
+      enrollmentRequired: true,
+      enrollmentDueAt: "2026-11-01T00:00:00Z",
+    });
+  });
+
+  it("sets up an authenticator app for the challenge and returns the recovery codes its confirmation mints", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { secret: "JBSWY3DP", provisioning_url: "otpauth://totp/x?secret=JBSWY3DP" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { user_id: "u1", recovery_codes: ["aaaa-bbbb"] }));
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.startMfaEnrollment("tok_2")).resolves.toEqual({
+      secret: "JBSWY3DP",
+      provisioningUrl: "otpauth://totp/x?secret=JBSWY3DP",
+    });
+    await expect(client.verifyMfa({ mfaToken: "tok_2", code: "123456" })).resolves.toEqual({ recoveryCodes: ["aaaa-bbbb"] });
+
+    const [enrollUrl, enrollInit] = fetchMock.mock.calls[0]!;
+    expect(enrollUrl).toBe("https://api.id.qeet.in/v1/auth/mfa/enroll");
+    expect(JSON.parse(enrollInit.body as string)).toEqual({ mfa_token: "tok_2" });
+    const [verifyUrl] = fetchMock.mock.calls[1]!;
+    expect(verifyUrl).toBe("https://api.id.qeet.in/v1/auth/session/mfa");
+  });
+
+  it("skips the setup with skip: true", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { user_id: "u1" }));
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await client.skipMfaEnrollment("tok_2");
+
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://api.id.qeet.in/v1/auth/session/mfa");
+    expect(JSON.parse(init.body as string)).toEqual({ mfa_token: "tok_2", skip: true });
+  });
+
+  it("signUp reports the enrolment challenge an organisation requiring MFA answers", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(201, { user_id: "u2", mfa_required: true, mfa_token: "tok_3", methods: ["totp"], enrollment_required: true }),
+    );
+    fetchMock.mockResolvedValueOnce(jsonResponse(201, { user_id: "u3" }));
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.signUp({ tenantId: "t1", email: "n@b.com", password: "secret123" })).resolves.toEqual({
+      status: "needs_mfa",
+      mfaToken: "tok_3",
+      methods: ["totp"],
+      enrollmentRequired: true,
+    });
+    await expect(client.signUp({ tenantId: "t1", email: "m@b.com", password: "secret123" })).resolves.toEqual({ status: "complete" });
+  });
+
+  it("magicLink.consume reports the challenge a link for an account holding a second factor answers", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { mfa_required: true, mfa_token: "tok_m", methods: ["totp"] }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { access_token: "a", user_id: "u1" }));
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.magicLink.consume("link_1")).resolves.toEqual({ status: "needs_mfa", mfaToken: "tok_m", methods: ["totp"] });
+    await expect(client.magicLink.consume("link_2")).resolves.toEqual({ status: "complete", userId: "u1" });
+  });
+
   it("currentUser returns null on a 401 instead of throwing", async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     fetchMock.mockResolvedValueOnce(jsonResponse(401, { error: { code: "unauthorized", message: "no session" } }));

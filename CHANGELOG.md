@@ -4,6 +4,30 @@ All notable changes to the Qeet ID React SDK are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Setting up a second factor during sign-in and sign-up, for an organisation
+  that requires MFA. When the account has no second factor, `signIn`/`signUp`
+  answer a `needs_mfa` challenge with `enrollmentRequired` (and
+  `enrollmentDueAt` during the organisation's grace period).
+  `client.startMfaEnrollment` starts an authenticator app; `verifyMfa` with a
+  code from it completes the challenge and now returns `{ recoveryCodes }` —
+  the account's new recovery codes, shown once; `client.skipMfaEnrollment`
+  puts the setup off while the grace period runs. `useSignIn`/`useSignUp` add
+  the `needs_mfa_enrollment` and `recovery_codes` steps with
+  `startEnrollment`, `skipEnrollment` and `finish`, and `<SignIn/>`/`<SignUp/>`
+  render them.
+
+### Changed
+
+- `client.verifyMfa` returns `{ recoveryCodes }`, `client.signUp` a
+  `SignUpResult` and `client.magicLink.consume` a `SignInResult` instead of
+  `void`; callers that ignore the result are unaffected. A magic link for an
+  account that holds a second factor, or must have one, now answers a
+  `needs_mfa` challenge rather than signing in.
+
 ## [0.1.0] — 2026-07-10
 
 Initial release.
