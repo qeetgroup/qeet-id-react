@@ -25,7 +25,7 @@ repository → source.
 
 ## Commands
 
-`pnpm install` · `pnpm check` · `pnpm build` · `pnpm test` · `pnpm typecheck` · `pnpm lint`
+`bun install` · `bun run verify` · `bun run build` · `bun run test` · `bun run typecheck` · `bun run check`
 
 ## Do not
 

@@ -191,13 +191,35 @@ describe("QeetIDClient", () => {
       "/v1/me/organizations": () =>
         jsonResponse(200, {
           items: [
-            { id: "t1", name: "Acme", slug: "acme", plan: "pro", region: "ap-south-1", logo_url: "", domain: "", roles: ["owner"], last_used_at: null },
+            {
+              id: "t1",
+              name: "Acme",
+              slug: "acme",
+              plan: "pro",
+              region: "ap-south-1",
+              logo_url: "",
+              domain: "",
+              roles: ["owner"],
+              last_used_at: null,
+            },
           ],
           next_cursor: "t1",
         }),
       "/v1/me/organizations?cursor=t1": () =>
         jsonResponse(200, {
-          items: [{ id: "t2", name: "Globex", slug: "globex", plan: "free", region: "", logo_url: "", domain: "globex.test", roles: null, last_used_at: "2026-10-20T09:00:00Z" }],
+          items: [
+            {
+              id: "t2",
+              name: "Globex",
+              slug: "globex",
+              plan: "free",
+              region: "",
+              logo_url: "",
+              domain: "globex.test",
+              roles: null,
+              last_used_at: "2026-10-20T09:00:00Z",
+            },
+          ],
           next_cursor: "",
         }),
     });

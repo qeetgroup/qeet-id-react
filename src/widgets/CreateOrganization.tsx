@@ -78,12 +78,7 @@ export function CreateOrganization({ onCreate, onSuccess, appearance: localAppea
             style={inputStyle}
           />
         </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={el.buttonPrimary ?? el.button}
-          style={primaryButtonStyle}
-        >
+        <button type="submit" disabled={isLoading} className={el.buttonPrimary ?? el.button} style={primaryButtonStyle}>
           {isLoading ? "Creating…" : "Create organization"}
         </button>
       </form>
@@ -92,16 +87,27 @@ export function CreateOrganization({ onCreate, onSuccess, appearance: localAppea
 }
 
 const inputStyle: CSSProperties = {
-  display: "block", width: "100%", padding: "8px 12px",
+  display: "block",
+  width: "100%",
+  padding: "8px 12px",
   border: "1px solid var(--qeetid-color-border, #d1d5db)",
   borderRadius: "var(--qeetid-border-radius, 8px)",
-  fontSize: 14, boxSizing: "border-box", outline: "none",
-  background: "transparent", color: "inherit",
+  fontSize: 14,
+  boxSizing: "border-box",
+  outline: "none",
+  background: "transparent",
+  color: "inherit",
 };
 const labelStyle: CSSProperties = { display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 };
 const primaryButtonStyle: CSSProperties = {
-  display: "block", width: "100%", padding: "10px 16px",
-  background: "var(--qeetid-color-primary, #F26D0E)", color: "#fff",
-  border: "none", borderRadius: "var(--qeetid-border-radius, 8px)",
-  fontSize: 14, fontWeight: 500, cursor: "pointer",
+  display: "block",
+  width: "100%",
+  padding: "10px 16px",
+  background: "var(--qeetid-color-primary, #F26D0E)",
+  color: "#fff",
+  border: "none",
+  borderRadius: "var(--qeetid-border-radius, 8px)",
+  fontSize: 14,
+  fontWeight: 500,
+  cursor: "pointer",
 };

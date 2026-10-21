@@ -95,7 +95,12 @@ export class Http {
     const data = text ? safeParse(text) : null;
     if (!res.ok) {
       const err = (data as { error?: { code?: string; message?: string } } | null)?.error;
-      throw new AuthenticationError(res.status, err?.code ?? `http_${res.status}`, err?.message ?? "Request failed", res.headers.get("x-request-id") ?? undefined);
+      throw new AuthenticationError(
+        res.status,
+        err?.code ?? `http_${res.status}`,
+        err?.message ?? "Request failed",
+        res.headers.get("x-request-id") ?? undefined,
+      );
     }
     return data as T;
   }

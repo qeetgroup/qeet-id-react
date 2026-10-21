@@ -58,14 +58,14 @@ New to Qeet ID? Read [Concepts](#concepts) first — this SDK is the browser-sid
 
 ## Requirements
 
-- **Node.js 18.17+** for tooling; **React 18 or 19** as a peer dependency (not bundled).
+- **Node.js 22+** for tooling; **React 18 or 19** as a peer dependency (not bundled).
 - A Qeet ID account and, for redirect mode, your own hosted-login routes (or [`@qeet-id/nextjs`](https://github.com/qeetgroup/qeet-id-nextjs), which provides them).
 
 ## Installation
 
 ```bash
 npm install @qeet-id/react
-# or: pnpm add @qeet-id/react / yarn add @qeet-id/react
+# or: bun add @qeet-id/react / pnpm add @qeet-id/react / yarn add @qeet-id/react
 ```
 
 ## Quick start

@@ -7,8 +7,8 @@ setup read from source. Publication status checked against the npm registry.
 ## Identity
 
 `@qeet-id/react` v0.1.0 — React hooks, components and prebuilt widgets for Qeet ID. React 18 or 19
-peer, Node ≥18.17, pnpm, **zero runtime dependencies**, built by Vite in library mode with
-`vite-plugin-dts` (`rollupTypes: true`).
+peer, Node ≥22, bun and Biome, **zero runtime dependencies**, built by Vite in library mode with
+`vite-plugin-dts` (`bundleTypes: true`).
 
 **Status: `development`. Not published — npm returns 404**, no release tag, and **no version export
 at all** (there is no `src/version.ts`) even though `SECURITY.md` asks reporters for the SDK version.
@@ -122,7 +122,7 @@ Same organization, opposite decisions, each correct for its consumer. Do not har
 
 ## CI/CD
 
-`ci.yml` (Node 18.17/20/22/24) runs install, typecheck, **lint**, build, `test:coverage`.
+`ci.yml` (Node 22/24/26) runs install, typecheck, **lint**, build, `test:coverage`.
 **`qeet-id-node`'s `ci.yml` omits lint; this one includes it** — a parity gap between sibling repos.
 `lint.yml`, `security.yml` (audit + gitleaks), `codeql.yml`, `release.yml` (tag `v*` → npm publish).
 
