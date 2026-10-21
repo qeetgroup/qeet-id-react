@@ -127,20 +127,87 @@ describe("QeetIDClient", () => {
     await expect(client.magicLink.consume("link_2")).resolves.toEqual({ status: "complete", userId: "u1" });
   });
 
-  it("currentUser returns null on a 401 instead of throwing", async () => {
+  // Answers each request by its path (and query), so calls made in parallel
+  // don't depend on the order they reach fetch.
+  function routeFetch(routes: Record<string, () => Response>) {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse(401, { error: { code: "unauthorized", message: "no session" } }));
+    fetchMock.mockImplementation(async (url: string) => {
+      const u = new URL(url);
+      const answer = routes[u.pathname + u.search];
+      if (!answer) throw new Error(`unexpected request ${u.pathname}${u.search}`);
+      return answer();
+    });
+    return fetchMock;
+  }
+
+  it("currentUser merges the session ids with the profile from GET /v1/me", async () => {
+    const fetchMock = routeFetch({
+      "/v1/auth/me": () => jsonResponse(200, { user_id: "u1", tenant_id: "t2", session_id: null, actor: "user", scopes: null }),
+      "/v1/me": () =>
+        jsonResponse(200, {
+          id: "u1",
+          tenant_id: "t1",
+          email: "ada@example.com",
+          email_verified_at: "2026-10-01T10:00:00Z",
+          phone: null,
+          display_name: "Ada Lovelace",
+          avatar_url: "https://cdn.example.com/ada.png",
+          status: "active",
+        }),
+    });
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.currentUser()).resolves.toEqual({
+      id: "u1",
+      sub: "u1",
+      tenantId: "t2",
+      email: "ada@example.com",
+      emailVerified: true,
+      displayName: "Ada Lovelace",
+      avatarUrl: "https://cdn.example.com/ada.png",
+      status: "active",
+    });
+    for (const [, init] of fetchMock.mock.calls) expect(init.credentials).toBe("include");
+  });
+
+  it("currentUser returns null on a 401 instead of throwing", async () => {
+    const unauthorized = () => jsonResponse(401, { error: { code: "unauthorized", message: "no session" } });
+    routeFetch({ "/v1/auth/me": unauthorized, "/v1/me": unauthorized });
 
     const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
     await expect(client.currentUser()).resolves.toBeNull();
   });
 
   it("currentUser rethrows a non-401 error", async () => {
-    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: { code: "internal", message: "boom" } }));
+    const boom = () => jsonResponse(500, { error: { code: "internal", message: "boom" } });
+    routeFetch({ "/v1/auth/me": boom, "/v1/me": boom });
 
     const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
     await expect(client.currentUser()).rejects.toBeInstanceOf(AuthenticationError);
+  });
+
+  it("listOrganizations reads every page of GET /v1/me/organizations", async () => {
+    const fetchMock = routeFetch({
+      "/v1/me/organizations": () =>
+        jsonResponse(200, {
+          items: [
+            { id: "t1", name: "Acme", slug: "acme", plan: "pro", region: "ap-south-1", logo_url: "", domain: "", roles: ["owner"], last_used_at: null },
+          ],
+          next_cursor: "t1",
+        }),
+      "/v1/me/organizations?cursor=t1": () =>
+        jsonResponse(200, {
+          items: [{ id: "t2", name: "Globex", slug: "globex", plan: "free", region: "", logo_url: "", domain: "globex.test", roles: null, last_used_at: "2026-10-20T09:00:00Z" }],
+          next_cursor: "",
+        }),
+    });
+
+    const client = new QeetIDClient({ apiUrl: "https://api.id.qeet.in" });
+    await expect(client.listOrganizations()).resolves.toEqual([
+      { id: "t1", name: "Acme", slug: "acme", plan: "pro", region: "ap-south-1", roles: ["owner"], lastUsedAt: null },
+      { id: "t2", name: "Globex", slug: "globex", plan: "free", domain: "globex.test", roles: [], lastUsedAt: "2026-10-20T09:00:00Z" },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("echoes the CSRF cookie as a header on mutating requests", async () => {

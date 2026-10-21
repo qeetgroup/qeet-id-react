@@ -7,22 +7,26 @@ import { applyAppearance } from "./utils.js";
 import type { Appearance } from "../types/common.js";
 
 export interface CreateOrganizationProps {
-  /** Called with the entered organization name after the user submits the form.
-   *  Organization creation requires a server call — use this callback to route
-   *  to your own API layer (which calls `@qeet-id/node`'s `organizations.create`). */
+  /**
+   * Creates the organization with the entered name; throw to show the error
+   * in the form. Your server does this: `POST /v1/tenants` (a `slug` and the
+   * `name`) with the signed-in user's access token, who becomes its owner.
+   * The browser can't: the hosted-login cookie doesn't reach that route,
+   * because it answers with a token pair.
+   */
+  onCreate: (name: string) => Promise<void> | void;
+  /** Called with the name once `onCreate` has finished. */
   onSuccess?: (name: string) => void;
   appearance?: Appearance;
 }
 
 /**
- * <CreateOrganization/> renders a simple form to create a new organization.
- * Note: organization creation requires a backend implementation via the server
- * SDK (@qeet-id/node). This component is a UI shell — wire `onSuccess` to your
- * own server action or API route that calls `sdk.tenants.create(...)`.
+ * <CreateOrganization/> renders a form that collects a new organization's
+ * name and hands it to `onCreate`, showing progress and any error.
  *
- *   <CreateOrganization onSuccess={(org) => router.push(`/orgs/${org.id}`)} />
+ *   <CreateOrganization onCreate={createOrganization} onSuccess={() => router.refresh()} />
  */
-export function CreateOrganization({ onSuccess, appearance: localAppearance }: CreateOrganizationProps) {
+export function CreateOrganization({ onCreate, onSuccess, appearance: localAppearance }: CreateOrganizationProps) {
   const providerAppearance = useAppearance();
   const appearance = { ...providerAppearance, ...localAppearance };
   const vars = applyAppearance(appearance);
@@ -34,18 +38,14 @@ export function CreateOrganization({ onSuccess, appearance: localAppearance }: C
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
     setIsLoading(true);
     setError(null);
     try {
-      // Organization creation goes through the server SDK / your API layer.
-      // Emit a custom event so the host app can intercept and handle it.
-      const event = new CustomEvent("qeetid:create-organization", {
-        bubbles: true,
-        detail: { name: name.trim() },
-      });
-      (e.target as HTMLElement).dispatchEvent(event);
-      onSuccess?.(name.trim());
+      await onCreate(trimmed);
+      setName("");
+      onSuccess?.(trimmed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create organization");
     } finally {

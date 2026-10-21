@@ -22,6 +22,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `useUser` reads the signed-in user's profile in embedded mode:
+  `client.currentUser()` merges the session's ids (`GET /v1/auth/me`) with
+  the profile (`GET /v1/me`), so `email`, `displayName`, `avatarUrl`,
+  `emailVerified`, `phone` and `status` are filled. Before, it returned the
+  raw `/v1/auth/me` body (snake_case ids, no profile), and `useUser` never
+  called the API at all. `useOrganizationList` lists every organization the
+  user belongs to, by name (new `client.listOrganizations()`,
+  `GET /v1/me/organizations`), and `<OrganizationSwitcher/>` shows the names;
+  it showed one bare id. A failed switch is shown in the switcher instead of
+  rejecting unhandled. Needs the API release where the hosted-login cookie
+  reaches those three reads.
+- **Breaking:** `<CreateOrganization/>` requires `onCreate(name)` and awaits
+  it, showing its error in the form; it no longer dispatches the
+  `qeetid:create-organization` DOM event. Creating an organization needs the
+  user's access token, so the app's server does it.
 - `client.verifyMfa` returns `{ recoveryCodes }`, `client.signUp` a
   `SignUpResult` and `client.magicLink.consume` a `SignInResult` instead of
   `void`; callers that ignore the result are unaffected. A magic link for an
