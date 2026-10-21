@@ -58,14 +58,14 @@ New to Qeet ID? Read [Concepts](#concepts) first — this SDK is the browser-sid
 
 ## Requirements
 
-- **Node.js 18.17+** for tooling; **React 18 or 19** as a peer dependency (not bundled).
+- **Node.js 22+** for tooling; **React 18 or 19** as a peer dependency (not bundled).
 - A Qeet ID account and, for redirect mode, your own hosted-login routes (or [`@qeet-id/nextjs`](https://github.com/qeetgroup/qeet-id-nextjs), which provides them).
 
 ## Installation
 
 ```bash
 npm install @qeet-id/react
-# or: pnpm add @qeet-id/react / yarn add @qeet-id/react
+# or: bun add @qeet-id/react / pnpm add @qeet-id/react / yarn add @qeet-id/react
 ```
 
 ## Quick start
@@ -132,7 +132,7 @@ Pick redirect mode if you already have (or are fine building) a hosted login pag
 |---|---|
 | `useUser` | The signed-in user's profile |
 | `useOrganization` | The active organization (tenant) + `setActive` to switch |
-| `useOrganizationList` | The current user's own tenant membership |
+| `useOrganizationList` | Every organization the signed-in user belongs to, by name |
 
 </details>
 
@@ -160,7 +160,7 @@ Pick redirect mode if you already have (or are fine building) a hosted login pag
 | `<UserProfile/>` | Profile + passkeys + active-sessions management panel |
 | `<OrganizationSwitcher/>` | Dropdown to switch active tenant |
 | `<OrganizationProfile/>` | Read-only active-organization display |
-| `<CreateOrganization/>` | New-organization form shell (see [FAQ](#faq)) |
+| `<CreateOrganization/>` | New-organization form; your `onCreate` creates it (see [FAQ](#faq)) |
 
 </details>
 
@@ -289,7 +289,7 @@ Runnable example snippets live in [`examples/`](./examples):
 
 **Why is there no `usePermission`/`useRole`?** The real backend has no session-authenticated "what can I do" endpoint — only the server-side management API (`@qeet-id/node`) can resolve RBAC. See [docs/FUTURE.md](docs/FUTURE.md).
 
-**Why does `<CreateOrganization/>` not actually create anything?** Tenant creation is a management-API operation. The component renders a real form and dispatches a `qeetid:create-organization` event with the entered name — wire that up to your own backend endpoint (which calls `@qeet-id/node`'s `organizations.create`), rather than expecting this browser SDK to do it directly with no credential to do so safely.
+**Why does `<CreateOrganization/>` need an `onCreate`?** Creating an organization (`POST /v1/tenants`) answers with a token pair, so the browser's hosted-login cookie doesn't reach it. The component collects the name and awaits your `onCreate(name)`: have it call your server, which makes that request with the signed-in user's access token (the user becomes the owner). Throw from `onCreate` to show the error in the form.
 
 **Do I need both `@qeet-id/react` and `@qeet-id/node`?** Usually yes — `@qeet-id/node` on your backend (holds the secret API key, verifies sessions, manages users/roles) and `@qeet-id/react` on your frontend (renders auth UI, drives sign-in). They're complementary, not overlapping.
 

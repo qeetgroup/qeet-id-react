@@ -25,16 +25,14 @@ export function OrganizationProfile({ appearance: localAppearance }: Organizatio
 
   if (!isLoaded) return null;
   if (!organization) {
-    return (
-      <p style={{ fontSize: 13, color: "var(--qeetid-color-text-muted, #6b7280)" }}>
-        No active organization.
-      </p>
-    );
+    return <p style={{ fontSize: 13, color: "var(--qeetid-color-text-muted, #6b7280)" }}>No active organization.</p>;
   }
 
   return (
     <div className={el.card} style={{ ...vars, maxWidth: 480, margin: "0 auto" }}>
-      <h2 className={el.headerTitle} style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Organization</h2>
+      <h2 className={el.headerTitle} style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
+        Organization
+      </h2>
       <dl style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "6px 16px", fontSize: 14 }}>
         <dt style={{ color: "var(--qeetid-color-text-muted, #6b7280)", fontWeight: 500 }}>ID</dt>
         <dd style={{ margin: 0, fontFamily: "monospace", fontSize: 12 }}>{organization.id}</dd>

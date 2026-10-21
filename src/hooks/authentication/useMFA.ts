@@ -23,15 +23,7 @@ export function useMFA(): UseMFAReturn {
   const [status, setStatus] = useState<MfaStatus>({ step: "idle" });
 
   const verify = useCallback(
-    async ({
-      mfaToken,
-      code,
-      remember,
-    }: {
-      mfaToken: string;
-      code: string;
-      remember?: boolean;
-    }) => {
+    async ({ mfaToken, code, remember }: { mfaToken: string; code: string; remember?: boolean }) => {
       if (!client) throw new Error("useMFA requires apiUrl on <QeetIDProvider>");
       setStatus({ step: "loading" });
       try {

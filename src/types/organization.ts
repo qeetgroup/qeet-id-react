@@ -1,12 +1,19 @@
 /**
- * The active organization (tenant). There is no session-scoped "list every
- * organization I belong to" endpoint on the real backend today — only the
- * single active tenant carried in the session (`/v1/auth/me`'s `tenant_id`)
- * plus `switchTenant`. `name` is therefore optional; multi-org UI degrades
- * to showing just the id until a real membership-list endpoint exists (see
- * docs/FUTURE.md).
+ * An organisation (tenant) the signed-in user belongs to, as
+ * `GET /v1/me/organizations` lists it. Only `id` is certain: in redirect
+ * mode, and for the active organisation before the list loads, the SDK
+ * knows just the session's tenant id.
  */
 export interface Organization {
   id: string;
   name?: string;
+  slug?: string;
+  plan?: string;
+  region?: string;
+  logoUrl?: string;
+  domain?: string;
+  /** The user's role names in this organisation. */
+  roles?: string[];
+  /** When the user last chose it, not counting the current session. */
+  lastUsedAt?: string | null;
 }

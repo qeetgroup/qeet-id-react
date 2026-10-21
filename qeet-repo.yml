@@ -20,11 +20,12 @@ repository:
 
 runtime:
   language: TypeScript
-  node: ">=18.17"
-  package_manager: pnpm@10.32.1
+  node: ">=22"               # .nvmrc pins 24
+  package_manager: bun@1.4.3
+  lint_format: biome
   peer: {react: "^18.0.0 || ^19.0.0", react-dom: "^18.0.0 || ^19.0.0"}
   runtime_deps: none
-  build: vite-lib-mode       # + vite-plugin-dts (rollupTypes)
+  build: vite-lib-mode       # + vite-plugin-dts (bundleTypes)
 
 module: {name: "@qeet-id/react", version: "0.1.0"}
 
@@ -48,15 +49,16 @@ deliberate_gaps:              # ADR-0002 — the backend has no endpoint for the
 absent_by_design: [retry, timeout, logger, pagination, JWKS verification, webhook verification]
 
 commands:
-  install: pnpm install
-  check:   pnpm check         # typecheck + lint + test
-  build:   pnpm build
-  test:    pnpm test
+  install: bun install
+  check:   bun run verify    # typecheck + biome check + test + build — the gate
+  build:   bun run build
+  test:    bun run test
 
 ci:
   workflows: [ci.yml, codeql.yml, lint.yml, release.yml, security.yml]
+  matrix: ["22", "24", "26"]
   note: ci.yml DOES run lint here (qeet-id-node's does not)
-  release: push main -> bump package.json -> gate -> pnpm publish --access public --provenance -> tag vX.Y.Z
+  release: push main -> bump package.json -> gate -> npm publish --access public --provenance -> tag vX.Y.Z
 
 security:
   sensitive_paths:

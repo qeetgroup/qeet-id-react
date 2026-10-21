@@ -20,7 +20,11 @@ export interface SignUpButtonProps {
 export function SignUpButton({ children, className, returnTo }: SignUpButtonProps) {
   const { signUpUrl } = usePaths();
   return (
-    <button type="button" className={className} onClick={() => navigate(signUpUrl, returnTo ?? window.location.pathname + window.location.search)}>
+    <button
+      type="button"
+      className={className}
+      onClick={() => navigate(signUpUrl, returnTo ?? window.location.pathname + window.location.search)}
+    >
       {children ?? "Sign up"}
     </button>
   );
