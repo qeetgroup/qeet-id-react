@@ -28,19 +28,29 @@ export function OrganizationSwitcher({ onOrganizationChange, appearance: localAp
   const { organization, setActive } = useOrganization();
   const { organizationList, isLoaded } = useOrganizationList();
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isLoaded) return null;
+  // The active organisation is known by id; its name comes from the list.
+  const active = organizationList.find((o) => o.id === organization?.id) ?? organization;
   if (organizationList.length <= 1) {
+    const only = active ?? organizationList[0];
     return (
       <span style={{ ...vars, fontSize: 14, fontWeight: 500 }}>
-        {organization?.name ?? organization?.id ?? "—"}
+        {only?.name ?? only?.id ?? "—"}
       </span>
     );
   }
 
   async function handleSelect(id: string) {
     setOpen(false);
-    await setActive(id);
+    setError(null);
+    try {
+      await setActive(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not switch organization");
+      return;
+    }
     onOrganizationChange?.(id);
   }
 
@@ -53,9 +63,14 @@ export function OrganizationSwitcher({ onOrganizationChange, appearance: localAp
         aria-expanded={open}
         style={triggerStyle}
       >
-        {organization?.name ?? organization?.id ?? "Select organization"}
+        {active?.name ?? active?.id ?? "Select organization"}
         <span aria-hidden style={{ marginLeft: 6 }}>▾</span>
       </button>
+      {error && (
+        <p role="alert" style={{ color: "var(--qeetid-color-danger, #ef4444)", fontSize: 13, margin: "4px 0 0" }}>
+          {error}
+        </p>
+      )}
       {open && (
         <>
           <div aria-hidden onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />

@@ -13,6 +13,7 @@ function navigate(url: string, returnTo?: string): void {
 }
 
 function imageURL(user: QeetIDUser | null | undefined): string | undefined {
+  if (user?.avatarUrl) return user.avatarUrl;
   if (typeof user?.["picture"] === "string") return user["picture"];
   if (typeof user?.["imageUrl"] === "string") return user["imageUrl"];
   return undefined;

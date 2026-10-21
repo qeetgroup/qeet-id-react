@@ -25,24 +25,12 @@ There's no session-authenticated admin-listing endpoint for a browser to
 call; listing users/organizations across a tenant is a management-API
 operation (`@qeet-id/node`), not something an end-user's own session can
 do. `useUser`/`useOrganization` (singular, "my own") and
-`useOrganizationList` (the current user's own tenant membership — today
-that's just their one active tenant, since there's no true multi-org
-membership endpoint either) are in scope and already shipped.
+`useOrganizationList` (every organization the signed-in user belongs to,
+from `GET /v1/me/organizations`) are in scope and already shipped.
 
-## `/v1/auth/me` doesn't return a profile yet
+## No organization creation from the browser
 
-The real handler today returns only session-principal claims
-(`user_id`, `tenant_id`, `session_id`, `actor`, `scopes`) — no
-`email`/`displayName`. `QeetIDUser` already declares those two fields as
-optional so `useUser()`/`<UserButton/>` degrade gracefully (falling back to
-"Account" as a label) rather than assuming they're always present. Once
-`/v1/auth/me` is enriched, no SDK change is needed — the fields will just
-start arriving.
-
-## No true multi-organization membership
-
-There's no "list every organization I'm a member of" endpoint — only the
-single tenant carried in the session, switchable via
-`POST /v1/auth/switch-tenant`. `useOrganizationList`/`<OrganizationSwitcher/>`
-already handle this honestly (an org list of length ≤ 1 renders as a plain
-label, not a switcher) rather than pretending multi-org support exists.
+`POST /v1/tenants` answers with a token pair, so the hosted-login cookie
+doesn't reach it. `<CreateOrganization/>` collects the name and hands it to
+the app's `onCreate`, whose server makes that call with the signed-in user's
+access token.
