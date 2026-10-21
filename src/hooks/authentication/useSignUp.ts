@@ -31,17 +31,7 @@ export function useSignUp(): UseSignUpReturn {
   const [status, setStatus] = useState<SignUpStatus>({ step: "idle" });
 
   const signUp = useCallback(
-    async ({
-      email,
-      password,
-      displayName,
-      tenantId,
-    }: {
-      email: string;
-      password: string;
-      displayName?: string;
-      tenantId?: string;
-    }) => {
+    async ({ email, password, displayName, tenantId }: { email: string; password: string; displayName?: string; tenantId?: string }) => {
       if (!client) throw new Error("useSignUp requires apiUrl on <QeetIDProvider>");
       setStatus({ step: "loading" });
       try {

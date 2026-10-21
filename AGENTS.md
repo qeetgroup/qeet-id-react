@@ -7,7 +7,7 @@ here and add nothing architectural.
 ## What this repository is
 
 `@qeet-id/react` v0.1.0 — React hooks, components and prebuilt widgets for Qeet ID. React 18 or 19
-as a peer, pnpm, **zero runtime dependencies**, built by Vite in library mode.
+as a peer, Node ≥22, bun and Biome, **zero runtime dependencies**, built by Vite in library mode.
 
 > **This is a browser client, not a management SDK.** It is fundamentally different from
 > `qeet-id-go` and `qeet-id-node`: **cookie + CSRF, never an API key**, and it **never sees a
@@ -76,27 +76,27 @@ No `Authorization: ApiKey` header, ever. A browser must not hold a server creden
 ## Commands
 
 ```bash
-pnpm install
-pnpm check      # typecheck + lint + test — THE gate
-pnpm build      # vite lib mode + dts
-pnpm test       # vitest, jsdom
-pnpm typecheck
-pnpm lint
-pnpm format
+bun install
+bun run verify     # typecheck + Biome check + test + build — THE gate
+bun run build      # vite lib mode + dts
+bun run test       # vitest, jsdom
+bun run typecheck
+bun run check      # Biome: lint and formatting
+bun run format
 ```
 
-Also `pnpm dev` (vite build --watch), `pnpm test:watch`, `pnpm test:coverage`, `pnpm lint:fix`.
+Also `bun run dev` (vite build --watch), `bun run test:watch`, `bun run test:coverage`, `bun run lint:fix`.
 
 ## What CI enforces
 
-`ci.yml` (Node 18.17/20/22/24): install, typecheck, **lint**, build, `test:coverage` — note
-`qeet-id-node`'s `ci.yml` omits lint; this one includes it. `lint.yml`: eslint + prettier check.
-`security.yml`: `pnpm audit` + gitleaks. `codeql.yml`: JS/TS. `release.yml`: tag `v*` → npm publish.
+`ci.yml` (Node 22/24/26): install, typecheck, **lint**, build, `test:coverage` — note
+`qeet-id-node`'s `ci.yml` omits lint; this one includes it. `lint.yml`: `bun run check` (Biome).
+`security.yml`: `bun audit` + gitleaks. `codeql.yml`: JS/TS. `release.yml`: tag `v*` → npm publish.
 
 ## Before you finish
 
 ```bash
-pnpm check
+bun run verify
 git diff
 ```
 

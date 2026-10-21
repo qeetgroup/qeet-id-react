@@ -80,7 +80,9 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
   if (status.step === "needs_mfa") {
     return (
       <div className={el.card} style={{ ...vars, maxWidth: 400, margin: "0 auto" }}>
-        <h2 className={el.headerTitle} style={{ marginBottom: 4 }}>Two-factor authentication</h2>
+        <h2 className={el.headerTitle} style={{ marginBottom: 4 }}>
+          Two-factor authentication
+        </h2>
         <p className={el.headerSubtitle} style={{ marginBottom: 20, color: "var(--qeetid-color-text-muted, #6b7280)", fontSize: 14 }}>
           Enter the code from your authenticator app.
         </p>
@@ -91,7 +93,11 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
         )}
         <form onSubmit={handleMfa}>
           <div className={el.formField} style={{ marginBottom: 16 }}>
-            <label className={el.formLabel} htmlFor="qeetid-mfa-code" style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+            <label
+              className={el.formLabel}
+              htmlFor="qeetid-mfa-code"
+              style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}
+            >
               Code
             </label>
             <input
@@ -106,12 +112,7 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
               style={inputStyle}
             />
           </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={el.buttonPrimary ?? el.button}
-            style={primaryButtonStyle}
-          >
+          <button type="submit" disabled={isLoading} className={el.buttonPrimary ?? el.button} style={primaryButtonStyle}>
             {isLoading ? "Verifying…" : "Verify"}
           </button>
         </form>
@@ -121,7 +122,9 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
 
   return (
     <div className={el.card} style={{ ...vars, maxWidth: 400, margin: "0 auto" }}>
-      <h2 className={el.headerTitle} style={{ marginBottom: 4 }}>Sign in</h2>
+      <h2 className={el.headerTitle} style={{ marginBottom: 4 }}>
+        Sign in
+      </h2>
       {error && (
         <p className={el.errorMessage} style={{ color: "var(--qeetid-color-danger, #ef4444)", fontSize: 13, marginBottom: 12 }}>
           {error}
@@ -129,7 +132,9 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
       )}
       <form onSubmit={handleSubmit}>
         <div className={el.formField} style={{ marginBottom: 16 }}>
-          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-email">Email</label>
+          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-email">
+            Email
+          </label>
           <input
             id="qeetid-email"
             className={el.formInput}
@@ -142,7 +147,9 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
           />
         </div>
         <div className={el.formField} style={{ marginBottom: 20 }}>
-          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-password">Password</label>
+          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-password">
+            Password
+          </label>
           <input
             id="qeetid-password"
             className={el.formInput}
@@ -159,12 +166,7 @@ export function SignIn({ onSuccess, onSignUp, onForgotPassword, appearance: loca
             </button>
           )}
         </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={el.buttonPrimary ?? el.button}
-          style={primaryButtonStyle}
-        >
+        <button type="submit" disabled={isLoading} className={el.buttonPrimary ?? el.button} style={primaryButtonStyle}>
           {isLoading ? "Signing in…" : "Sign in"}
         </button>
       </form>

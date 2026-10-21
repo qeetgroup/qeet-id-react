@@ -14,6 +14,7 @@ import type {
   SocialStartParams,
 } from "../types/auth.js";
 import type { Branding, LoginContext } from "../types/common.js";
+import type { Organization } from "../types/organization.js";
 import type { QeetIDUser } from "../types/user.js";
 import type { Session, Passkey } from "../types/session.js";
 import { Http } from "./http.js";
@@ -52,6 +53,45 @@ interface PasskeyResponse {
   transports?: string[] | null;
   last_used_at?: string | null;
   created_at: string;
+}
+interface PrincipalResponse {
+  user_id?: string | null;
+  tenant_id?: string | null;
+  session_id?: string | null;
+}
+interface ProfileResponse {
+  id: string;
+  email: string;
+  email_verified_at?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  phone?: string | null;
+  status?: string;
+}
+interface OrganizationResponse {
+  id: string;
+  name: string;
+  slug?: string;
+  plan?: string;
+  region?: string;
+  logo_url?: string;
+  domain?: string;
+  roles?: string[] | null;
+  last_used_at?: string | null;
+}
+interface OrganizationPageResponse {
+  items?: OrganizationResponse[] | null;
+  next_cursor?: string | null;
+}
+
+function toOrganization(o: OrganizationResponse): Organization {
+  const org: Organization = { id: o.id, name: o.name, roles: o.roles ?? [], lastUsedAt: o.last_used_at ?? null };
+  if (o.slug) org.slug = o.slug;
+  if (o.plan) org.plan = o.plan;
+  if (o.region) org.region = o.region;
+  if (o.logo_url) org.logoUrl = o.logo_url;
+  if (o.domain) org.domain = o.domain;
+  return org;
 }
 interface LoginContextResponse {
   client_name?: string;
@@ -165,14 +205,41 @@ export class QeetIDClient {
     await this.http.post("/v1/auth/reset-password", { token, new_password: newPassword });
   }
 
-  /** The current signed-in user, or null when there's no session. */
+  /**
+   * The signed-in user, or null when there's no session: the session's
+   * identifiers (`GET /v1/auth/me`) merged with the profile (`GET /v1/me`).
+   */
   async currentUser(): Promise<QeetIDUser | null> {
+    let me: PrincipalResponse;
+    let profile: ProfileResponse;
     try {
-      return await this.http.get<QeetIDUser>("/v1/auth/me");
+      [me, profile] = await Promise.all([this.http.get<PrincipalResponse>("/v1/auth/me"), this.http.get<ProfileResponse>("/v1/me")]);
     } catch (e) {
       if (e instanceof AuthenticationError && e.isUnauthorized) return null;
       throw e;
     }
+    const user: QeetIDUser = { id: profile.id, sub: profile.id, email: profile.email, emailVerified: profile.email_verified_at != null };
+    const tenantId = me.tenant_id ?? undefined;
+    if (tenantId) user.tenantId = tenantId;
+    if (me.session_id) user.sessionId = me.session_id;
+    if (profile.display_name) user.displayName = profile.display_name;
+    if (profile.avatar_url) user.avatarUrl = profile.avatar_url;
+    if (profile.phone) user.phone = profile.phone;
+    if (profile.status) user.status = profile.status;
+    return user;
+  }
+
+  /** Every organisation the signed-in user belongs to, by name (`GET /v1/me/organizations`, all pages). */
+  async listOrganizations(): Promise<Organization[]> {
+    const out: Organization[] = [];
+    let cursor = "";
+    do {
+      const q = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+      const page = await this.http.get<OrganizationPageResponse>(`/v1/me/organizations${q}`);
+      for (const o of page.items ?? []) out.push(toOrganization(o));
+      cursor = page.next_cursor ?? "";
+    } while (cursor);
+    return out;
   }
 
   /** Switches the active tenant for the current principal. */

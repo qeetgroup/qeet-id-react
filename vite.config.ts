@@ -6,7 +6,7 @@ import dts from "vite-plugin-dts";
 const entry = fileURLToPath(new URL("src/index.ts", import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), dts({ include: ["src"], rollupTypes: true })],
+  plugins: [react(), dts({ include: ["src"], bundleTypes: true })],
   build: {
     lib: {
       entry,

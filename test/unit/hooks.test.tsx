@@ -12,7 +12,9 @@ function jsonResponse(status: number, body: unknown): Response {
   return new Response(payload, { status, headers: { "content-type": "application/json" } });
 }
 
-const embeddedWrapper = ({ children }: { children: React.ReactNode }) => <QeetIDProvider apiUrl="https://api.id.qeet.in">{children}</QeetIDProvider>;
+const embeddedWrapper = ({ children }: { children: React.ReactNode }) => (
+  <QeetIDProvider apiUrl="https://api.id.qeet.in">{children}</QeetIDProvider>
+);
 const redirectWrapper = ({ children }: { children: React.ReactNode }) => <QeetIDProvider>{children}</QeetIDProvider>;
 
 describe("useSignIn", () => {
@@ -62,9 +64,13 @@ describe("useSignIn", () => {
 
   it("sets up an authenticator app when the organisation requires one, then shows the recovery codes", async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { mfa_required: true, mfa_token: "tok_e", methods: ["totp"], enrollment_required: true }));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { mfa_required: true, mfa_token: "tok_e", methods: ["totp"], enrollment_required: true }),
+    );
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { secret: "KEY", provisioning_url: "otpauth://totp/x?secret=KEY" }));
-    fetchMock.mockResolvedValueOnce(jsonResponse(422, { error: { code: "mfa.code_invalid", message: "That verification code is incorrect or expired." } }));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(422, { error: { code: "mfa.code_invalid", message: "That verification code is incorrect or expired." } }),
+    );
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { user_id: "u1", recovery_codes: ["aaaa-bbbb", "cccc-dddd"] }));
 
     const { result } = renderHook(() => useSignIn(), { wrapper: embeddedWrapper });
@@ -100,7 +106,13 @@ describe("useSignIn", () => {
   it("skips the setup only while the grace period runs", async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     fetchMock.mockResolvedValueOnce(
-      jsonResponse(200, { mfa_required: true, mfa_token: "tok_g", methods: ["totp"], enrollment_required: true, enrollment_due_at: "2026-11-01T00:00:00Z" }),
+      jsonResponse(200, {
+        mfa_required: true,
+        mfa_token: "tok_g",
+        methods: ["totp"],
+        enrollment_required: true,
+        enrollment_due_at: "2026-11-01T00:00:00Z",
+      }),
     );
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { user_id: "u1" }));
 
@@ -172,7 +184,9 @@ describe("useSignUp", () => {
 
   it("sets up an authenticator app first where the organisation requires one", async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse(201, { user_id: "u1", mfa_required: true, mfa_token: "tok_s", methods: ["totp"], enrollment_required: true }));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(201, { user_id: "u1", mfa_required: true, mfa_token: "tok_s", methods: ["totp"], enrollment_required: true }),
+    );
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { secret: "KEY", provisioning_url: "otpauth://totp/x?secret=KEY" }));
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { user_id: "u1", recovery_codes: ["aaaa-bbbb"] }));
 

@@ -35,13 +35,13 @@ Parent context: **L0** `qeetgroup/qeet-context` · **L1** `qeetgroup/qeet-id-con
 
 ## Commands
 
-`pnpm install` · `pnpm check` · `pnpm build` · `pnpm test` · `pnpm typecheck` · `pnpm lint`
+`bun install` · `bun run verify` · `bun run build` · `bun run test` · `bun run typecheck` · `bun run check`
 
 That list is complete — **do not invent commands.**
 
 ## Before finishing
 
 ```bash
-pnpm check
+bun run verify
 git diff
 ```

@@ -5,12 +5,13 @@
 ```bash
 git clone https://github.com/qeetgroup/qeet-id-react
 cd qeet-id-react
-pnpm install
-pnpm check   # typecheck + lint + test
+bun install
+bun run verify   # typecheck + Biome check + test + build
 ```
 
-Requires Node.js 18.17+ — see `.nvmrc` for the version this repo is
-developed against. React 18 or 19 as a peer dependency (not bundled).
+Requires bun (the version in `package.json`'s `packageManager`) and
+Node.js 22+ — see `.nvmrc` for the version this repo is developed against.
+Biome lints and formats (`bun run check`, `bun run format`). React 18 or 19 as a peer dependency (not bundled).
 
 ## Conventions
 
@@ -60,8 +61,8 @@ developed against. React 18 or 19 as a peer dependency (not bundled).
 ## Tests
 
 ```bash
-pnpm test          # vitest run (jsdom + @testing-library/react)
-pnpm test:coverage
+bun run test          # vitest run (jsdom + @testing-library/react)
+bun run test:coverage
 ```
 
 ## Adding a new hook or component

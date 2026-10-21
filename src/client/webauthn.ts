@@ -46,7 +46,9 @@ function ceremonyError(e: unknown, fallback: { cancelled: string; failed: string
 /** Runs an authentication assertion for login/MFA and returns it as JSON. */
 export async function getAssertion(publicKey: unknown): Promise<unknown> {
   const PK = pkc();
-  const options = PK.parseRequestOptionsFromJSON ? PK.parseRequestOptionsFromJSON(publicKey) : (publicKey as PublicKeyCredentialRequestOptions);
+  const options = PK.parseRequestOptionsFromJSON
+    ? PK.parseRequestOptionsFromJSON(publicKey)
+    : (publicKey as PublicKeyCredentialRequestOptions);
   let assertion: PublicKeyCredentialWithJSON | null;
   try {
     assertion = (await navigator.credentials.get({ publicKey: options })) as PublicKeyCredentialWithJSON | null;
@@ -79,7 +81,9 @@ export async function isConditionalMediationAvailable(): Promise<boolean> {
  */
 export async function getConditionalAssertion(publicKey: unknown, signal: AbortSignal): Promise<unknown | null> {
   const PK = pkc();
-  const options = PK.parseRequestOptionsFromJSON ? PK.parseRequestOptionsFromJSON(publicKey) : (publicKey as PublicKeyCredentialRequestOptions);
+  const options = PK.parseRequestOptionsFromJSON
+    ? PK.parseRequestOptionsFromJSON(publicKey)
+    : (publicKey as PublicKeyCredentialRequestOptions);
   try {
     const assertion = (await navigator.credentials.get({
       publicKey: options,
@@ -96,7 +100,9 @@ export async function getConditionalAssertion(publicKey: unknown, signal: AbortS
 /** Creates a new credential (passkey enrollment) and returns it as JSON. */
 export async function createCredential(publicKey: unknown): Promise<unknown> {
   const PK = pkc();
-  const options = PK.parseCreationOptionsFromJSON ? PK.parseCreationOptionsFromJSON(publicKey) : (publicKey as PublicKeyCredentialCreationOptions);
+  const options = PK.parseCreationOptionsFromJSON
+    ? PK.parseCreationOptionsFromJSON(publicKey)
+    : (publicKey as PublicKeyCredentialCreationOptions);
   let credential: PublicKeyCredentialWithJSON | null;
   try {
     credential = (await navigator.credentials.create({ publicKey: options })) as PublicKeyCredentialWithJSON | null;

@@ -13,10 +13,10 @@ export interface UseOrganizationListReturn {
 }
 
 /**
- * useOrganizationList fetches the list of organizations (tenants) the current
- * user belongs to. Multi-org support requires the server SDK — this hook
- * surfaces the user's current tenant from auth state and the /v1/auth/me endpoint.
- * Requires `apiUrl` on <QeetIDProvider> (embedded mode).
+ * useOrganizationList lists every organization (tenant) the signed-in user
+ * belongs to, with names (`client.listOrganizations()`). Without `apiUrl` on
+ * <QeetIDProvider> (redirect mode) it knows only the session's tenant, from
+ * `initialState.tenantId`.
  *
  *   const { organizationList } = useOrganizationList();
  */
@@ -37,11 +37,7 @@ export function useOrganizationList(): UseOrganizationListReturn {
     }
     setError(null);
     try {
-      const user = await client.currentUser();
-      const tenantId = user?.tenantId ?? user?.["tenant_id"];
-      if (typeof tenantId === "string") {
-        setOrganizationList([{ id: tenantId }]);
-      }
+      setOrganizationList(await client.listOrganizations());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load organizations");
     } finally {

@@ -28,6 +28,11 @@ implementation already honestly degrades them to session-derived
 single-item data rather than a real list, with no fictional call
 underneath.
 
+*Update (2026-10-21, QTID-532):* the backend has real endpoints for these:
+`GET /v1/me` (profile) and `GET /v1/me/organizations` (every organization
+the user belongs to), both reachable with the hosted-login cookie. `useUser`
+and `useOrganizationList` now call them.
+
 ## Why
 
 Throughout this whole project's SDK work (Go, Node), the established rule

@@ -67,7 +67,9 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
 
   return (
     <div className={el.card} style={{ ...vars, maxWidth: 400, margin: "0 auto" }}>
-      <h2 className={el.headerTitle} style={{ marginBottom: 4 }}>Create an account</h2>
+      <h2 className={el.headerTitle} style={{ marginBottom: 4 }}>
+        Create an account
+      </h2>
       {error && (
         <p className={el.errorMessage} style={{ color: "var(--qeetid-color-danger, #ef4444)", fontSize: 13, marginBottom: 12 }}>
           {error}
@@ -75,7 +77,9 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
       )}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 16 }}>
-          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-name">Full name</label>
+          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-name">
+            Full name
+          </label>
           <input
             id="qeetid-name"
             className={el.formInput}
@@ -87,7 +91,9 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
           />
         </div>
         <div style={{ marginBottom: 16 }}>
-          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-su-email">Email</label>
+          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-su-email">
+            Email
+          </label>
           <input
             id="qeetid-su-email"
             className={el.formInput}
@@ -100,7 +106,9 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
           />
         </div>
         <div style={{ marginBottom: 20 }}>
-          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-su-password">Password</label>
+          <label className={el.formLabel} style={labelStyle} htmlFor="qeetid-su-password">
+            Password
+          </label>
           <input
             id="qeetid-su-password"
             className={el.formInput}
@@ -112,19 +120,16 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
             style={inputStyle}
           />
         </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={el.buttonPrimary ?? el.button}
-          style={primaryButtonStyle}
-        >
+        <button type="submit" disabled={isLoading} className={el.buttonPrimary ?? el.button} style={primaryButtonStyle}>
           {isLoading ? "Creating account…" : "Create account"}
         </button>
       </form>
       {onSignIn && (
         <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "var(--qeetid-color-text-muted, #6b7280)" }}>
           Already have an account?{" "}
-          <button type="button" onClick={onSignIn} style={linkStyle}>Sign in</button>
+          <button type="button" onClick={onSignIn} style={linkStyle}>
+            Sign in
+          </button>
         </p>
       )}
     </div>
@@ -132,20 +137,36 @@ export function SignUp({ tenantId, onSuccess, onSignIn, appearance: localAppeara
 }
 
 const inputStyle: CSSProperties = {
-  display: "block", width: "100%", padding: "8px 12px",
+  display: "block",
+  width: "100%",
+  padding: "8px 12px",
   border: "1px solid var(--qeetid-color-border, #d1d5db)",
   borderRadius: "var(--qeetid-border-radius, 8px)",
-  fontSize: 14, boxSizing: "border-box", outline: "none",
-  background: "transparent", color: "inherit",
+  fontSize: 14,
+  boxSizing: "border-box",
+  outline: "none",
+  background: "transparent",
+  color: "inherit",
 };
 const labelStyle: CSSProperties = { display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 };
 const primaryButtonStyle: CSSProperties = {
-  display: "block", width: "100%", padding: "10px 16px",
-  background: "var(--qeetid-color-primary, #F26D0E)", color: "#fff",
-  border: "none", borderRadius: "var(--qeetid-border-radius, 8px)",
-  fontSize: 14, fontWeight: 500, cursor: "pointer",
+  display: "block",
+  width: "100%",
+  padding: "10px 16px",
+  background: "var(--qeetid-color-primary, #F26D0E)",
+  color: "#fff",
+  border: "none",
+  borderRadius: "var(--qeetid-border-radius, 8px)",
+  fontSize: 14,
+  fontWeight: 500,
+  cursor: "pointer",
 };
 const linkStyle: CSSProperties = {
-  background: "none", border: "none", color: "var(--qeetid-color-primary, #F26D0E)",
-  cursor: "pointer", fontSize: "inherit", padding: 0, textDecoration: "underline",
+  background: "none",
+  border: "none",
+  color: "var(--qeetid-color-primary, #F26D0E)",
+  cursor: "pointer",
+  fontSize: "inherit",
+  padding: 0,
+  textDecoration: "underline",
 };
