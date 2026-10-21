@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QeetIDProvider } from "../../src/client/provider.js";
 import { useUser } from "../../src/hooks/identity/useUser.js";
@@ -53,8 +53,9 @@ describe("<OrganizationSwitcher/>", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /Acme/ }));
-    const options = screen.getAllByRole("option");
-    expect(options.map((o) => o.textContent)).toEqual(["Acme", "Globex"]);
+    const choices = within(screen.getByRole("list")).getAllByRole("button");
+    expect(choices.map((o) => o.textContent)).toEqual(["Acme", "Globex"]);
+    expect(choices[0]?.getAttribute("aria-current")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Globex" }));
 
     await waitFor(() => expect(onOrganizationChange).toHaveBeenCalledWith("t2"));
@@ -122,7 +123,8 @@ describe("useUser in embedded mode", () => {
   it("reads the profile from the API", async () => {
     routeFetch({
       "GET /v1/auth/me": () => jsonResponse(200, { user_id: "u1", tenant_id: "t1", session_id: null, actor: "user", scopes: null }),
-      "GET /v1/me": () => jsonResponse(200, { id: "u1", tenant_id: "t1", email: "ada@example.com", display_name: "Ada Lovelace", status: "active" }),
+      "GET /v1/me": () =>
+        jsonResponse(200, { id: "u1", tenant_id: "t1", email: "ada@example.com", display_name: "Ada Lovelace", status: "active" }),
     });
     render(
       <QeetIDProvider apiUrl="https://api.id.qeet.in">

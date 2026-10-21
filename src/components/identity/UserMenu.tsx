@@ -121,11 +121,7 @@ export function UserButton({ className, menuItems }: UserButtonProps) {
       </button>
       {open && (
         <>
-          <div
-            aria-hidden
-            onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 40 }}
-          />
+          <div aria-hidden onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
           <div role="menu" style={menu}>
             <div
               style={{
@@ -136,9 +132,7 @@ export function UserButton({ className, menuItems }: UserButtonProps) {
             >
               {user?.displayName && <div style={{ fontWeight: 600 }}>{user.displayName}</div>}
               {user?.email && (
-                <div style={{ color: "#6b7280", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {user.email}
-                </div>
+                <div style={{ color: "#6b7280", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</div>
               )}
             </div>
             {menuItems}

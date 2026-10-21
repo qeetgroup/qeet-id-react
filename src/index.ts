@@ -21,14 +21,33 @@
  * (`<SignInButton>` etc. navigate to your own hosted-login routes). See
  * docs/architecture/ARCHITECTURE.md.
  */
-export { QeetIDClient, QeetIDProvider, useQeetIDState, usePaths, useQeetIDClient, useAppearance, isWebAuthnSupported } from "./client/index.js";
+export {
+  QeetIDClient,
+  QeetIDProvider,
+  useQeetIDState,
+  usePaths,
+  useQeetIDClient,
+  useAppearance,
+  isWebAuthnSupported,
+} from "./client/index.js";
 export type { QeetIDClientOptions, QeetIDProviderProps } from "./client/index.js";
 
 export { AuthenticationError, WebAuthnError } from "./errors/index.js";
 
 export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, DEFAULT_LOGIN_URL, DEFAULT_LOGOUT_URL, DEFAULT_SIGNUP_URL } from "./constants/index.js";
 
-export { readCookie, getStoredPreference, setStoredPreference, describeSession, getQueryToken, isValidEmail, isValidPassword, MIN_PASSWORD_LENGTH, base64UrlDecode, base64UrlEncode } from "./utils/index.js";
+export {
+  readCookie,
+  getStoredPreference,
+  setStoredPreference,
+  describeSession,
+  getQueryToken,
+  isValidEmail,
+  isValidPassword,
+  MIN_PASSWORD_LENGTH,
+  base64UrlDecode,
+  base64UrlEncode,
+} from "./utils/index.js";
 
 export type {
   QeetIDUser,

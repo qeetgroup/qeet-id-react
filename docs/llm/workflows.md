@@ -6,8 +6,8 @@
 ## Set up
 
 ```bash
-pnpm install
-pnpm check      # typecheck + lint + test
+bun install
+bun run verify     # typecheck + Biome check + test + build
 ```
 
 No services required — tests run in jsdom. There is no `.env`.
@@ -26,7 +26,7 @@ No services required — tests run in jsdom. There is no `.env`.
 6  map snake_case -> camelCase there (this repo's convention)
 7  export from src/index.ts
 8  test in test/hooks.test.tsx
-9  pnpm check
+9  bun run verify
 ```
 
 **If the endpoint does not exist, stop.** The work is a backend change, not a hook.
@@ -40,7 +40,7 @@ No services required — tests run in jsdom. There is no `.env`.
 4  compose existing hooks — do not call the API directly from a component
 5  export from src/index.ts
 6  test in test/components.test.tsx
-7  pnpm check
+7  bun run verify
 ```
 
 ## Add a widget
@@ -52,7 +52,7 @@ No services required — tests run in jsdom. There is no `.env`.
 4  widgets require EMBEDDED mode: throw the standard
    "requires apiUrl on <QeetIDProvider>" if the client is null
 5  export from src/index.ts
-6  pnpm check
+6  bun run verify
 ```
 
 ## Change the transport or CSRF
@@ -65,7 +65,7 @@ No services required — tests run in jsdom. There is no `.env`.
 3  mutations echo qe_csrf as X-CSRF-Token; GET does not
 4  the cookie/header names MUST match qeet-id-server AND qeet-id-login
 5  test the seeding path (missing cookie -> GET /healthz -> retry)
-6  pnpm check
+6  bun run verify
 ```
 
 **Never add a skip-CSRF flag.** Never add an API-key header.
@@ -79,7 +79,7 @@ No services required — tests run in jsdom. There is no `.env`.
 2  ceremony correctness: challenge handling, origin, user verification
 3  surface failures as WebAuthnError with reason: unsupported | cancelled | failed
 4  NEGATIVE tests: unsupported browser, user cancellation, failed assertion
-5  pnpm check
+5  bun run verify
 ```
 
 ## Change the provider modes
@@ -100,7 +100,7 @@ No services required — tests run in jsdom. There is no `.env`.
 ```text
 1  bump package.json version
 2  CHANGELOG.md
-3  pnpm check && pnpm build
+3  bun run verify
 4  tag vX.Y.Z and push the tag
 ```
 
@@ -113,11 +113,11 @@ No services required — tests run in jsdom. There is no `.env`.
 ## Finish any task
 
 ```bash
-pnpm check
+bun run verify
 git diff
 ```
 
-`ci.yml` here **does** run lint (unlike `qeet-id-node`'s), so `pnpm check` matches CI closely.
+`ci.yml` here **does** run lint (unlike `qeet-id-node`'s), so `bun run verify` matches CI closely.
 
 ### Escalate rather than proceed
 

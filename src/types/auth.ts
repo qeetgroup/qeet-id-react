@@ -68,7 +68,12 @@ export type SignInStatus =
   | { step: "error"; error: string };
 
 /** Drives `<SignUp/>`/`useSignUp`'s step-by-step UI state. */
-export type SignUpStatus = { step: "idle" } | { step: "loading" } | MfaEnrollmentStatus | { step: "complete" } | { step: "error"; error: string };
+export type SignUpStatus =
+  | { step: "idle" }
+  | { step: "loading" }
+  | MfaEnrollmentStatus
+  | { step: "complete" }
+  | { step: "error"; error: string };
 
 /** Drives `useMFA`'s standalone step-up verification state. */
 export type MfaStatus = { step: "idle" } | { step: "loading" } | { step: "complete" } | { step: "error"; error: string };
