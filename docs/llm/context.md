@@ -1,150 +1,89 @@
 # Repository Context — qeet-id-react
 
-**Level:** L2 · **Status:** active · **Evidence state:** verified · **Last verified:** 2026-08-28
-**Verification scope:** exports, provider modes, transport and CSRF behaviour, CI jobs and test
-setup read from source. Publication status checked against the npm registry.
+**Level:** L2 · **Status:** active · **Evidence state:** verified · **Last verified:** 2026-11-05
+**Verification scope:** exports, store behaviour, contract, components, build output and CI read from
+source; every session field traced to `qeet-id-server` (`fix/server-release-1.0`).
 
 ## Identity
 
-`@qeet-id/react` v0.1.0 — React hooks, components and prebuilt widgets for Qeet ID. React 18 or 19
-peer, Node ≥22, bun and Biome, **zero runtime dependencies**, built by Vite in library mode with
-`vite-plugin-dts` (`bundleTypes: true`).
+`@qeet-id/react` — the React SDK for Qeet ID, for the browser. React 18.3 or 19 as the only peer,
+**zero runtime dependencies**, bun and Biome, TypeScript 7, built by tsdown into ES module and
+CommonJS files, one per source module.
 
-**Status: `development`. Not published — npm returns 404**, no release tag, and **no version export
-at all** (there is no `src/version.ts`) even though `SECURITY.md` asks reporters for the SDK version.
+**Status: development. Not yet published to npm.**
 
 ## Context inheritance
 
 ```text
-qeet-context (L0)  →  qeet-id-context (L1)  →  qeet-id-server (the contract)
+qeet-context (L0)  →  qeet-id-context (L1)  →  qeet-id-server (Qeet ID)
                                             →  qeet-id-react (L2 — this document)
+                                                 ↑ implemented on the server by qeet-id-nextjs, qeet-id-tanstack
 ```
-
-## What makes this SDK different
-
-> **It is a browser client, not a management SDK.**
-
-| | `qeet-id-go` / `qeet-id-node` | **this repository** |
-|---|---|---|
-| Auth | `Authorization: ApiKey <qk_...>` | **cookie + CSRF double-submit** |
-| Sees a token? | yes | **never** — session is HttpOnly |
-| Base URL | defaults to `https://api.id.qeet.in` | **required, no default** |
-| Retry / timeout / logger | yes | **none** |
-| Pagination | yes | **none** |
-| JWKS / webhook verification | yes | **none** |
-
-Every one of those absences is deliberate. A browser must not hold a server credential, and a
-component library has no business retrying a user-initiated request behind their back.
 
 ## Responsibilities
 
-Rendering authentication UI and exposing React state for it: sign-in/up flows, passkey ceremonies,
-MFA, session state, user and organization reads, and six prebuilt widgets.
+The session in a React app whose people sign in on Qeet ID's hosted pages and whose session lives on
+its own server (ADR-0001): the session contract (`src/contract.ts`, ADR-0002), the provider and its
+store (ADR-0005), the hooks, the components, the optional stylesheet (ADR-0003) and a testing entry.
 
 ## Non-responsibilities
 
-Authorization decisions · tenant scoping · token issuance or storage · admin/management operations ·
-the API contract. All belong to `qeet-id-server`.
+**It never calls Qeet ID and never holds a token.** Sign-in, sign-up, MFA, passkeys and account
+management happen on Qeet ID's hosted pages. The routes that exchange codes, keep tokens and renew
+them are the server SDKs' (`qeet-id-nextjs`, `qeet-id-tanstack`). Management of users, roles and
+organisations is `qeet-id-node`'s, on a server.
 
-## The two provider modes — ADR-0001
+## Architecture
+
+See [docs/architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
 
 ```text
-<QeetIDProvider>                          redirect mode
-   no apiUrl  →  client = null
-   SignInButton/SignUpButton/SignOutButton navigate to loginUrl/signUpUrl/logoutUrl
-   flow hooks + widgets THROW "requires apiUrl on <QeetIDProvider>"
-
-<QeetIDProvider apiUrl="https://api.id.qeet.in">      embedded mode
-   new QeetIDClient({ apiUrl })
-   hooks and <SignIn/>/<SignUp/> drive the API directly
+<QeetIDProvider>         creates one SessionStore; start() on mount, stop() on unmount
+  ↓ context (store, strings)
+hooks / components       useSyncExternalStore on the store, each selecting its part
+  ↓ actions
+SessionStore             src/core/store.ts — state, checks, sign-in/out, switching, tabs, expiry
+  ↓
+fetchTransport           src/core/transport.ts — GET/POST {basePath}/*, X-Qeet-ID-Request: 1
+  ↓
+the app's own server     (@qeet-id/nextjs, @qeet-id/tanstack)
 ```
 
-`useAuth`, `useUser`, `<SignedIn>`, `<SignedOut>` work in **both** modes — they read `initialState`
-and never need `apiUrl`.
+## The session contract
 
-**Evidence:** `src/client/provider.tsx`, `docs/design-decisions/ADR-0001-two-provider-modes.md`
+**Evidence:** `src/contract.ts`, `docs/session-contract.md`
 
-## Transport and CSRF
+| Property | Value |
+| :-- | :-- |
+| Base path | `/auth` (configurable on both sides) |
+| Routes | `sign-in`, `sign-up`, `callback` (navigations); `session` (GET); `sign-out`, `switch-organization` (POST JSON) |
+| CSRF | `X-Qeet-ID-Request: 1` on every request; required on POST |
+| Session | `{ user: { id, email, emailVerified, name, picture }, organization: { id, name } \| null, roles, permissions, expiresAt }` |
+| Errors | `{ error: { code, message } }`; codes in `SessionErrorCode` |
+| Return paths | `safeReturnTo(value, origin)` on both sides |
+| Callback failure | `?authError=<SignInErrorCode>` on the return path |
 
-**Evidence:** `src/client/http.ts`, `src/constants/auth.ts`
+## State
 
-Every request sets `credentials: "include"`. Mutations read the `qe_csrf` cookie and echo it as
-`X-CSRF-Token`; if the cookie is absent the client fires a best-effort `GET /healthz` to seed it.
-GET requests send no CSRF header.
+**Evidence:** `src/core/store.ts`
 
-This mirrors `qeet-id-login` exactly — the same cookie-based contract with the same backend.
+`status` is `loading`, `signed-in`, `signed-out` or `unavailable`; `error`, `endReason`
+(`signed-out`, `expired`, `revoked`) and `pendingAction` (`sign-out`, `switch-organization`) complete
+the snapshot. Checks run on start (unless `initialSession`), on focus (at most every 5 s), on
+`online`, at `expiresAt` and on another tab's message; checks on their way are shared.
 
-**There is no resilience layer**: raw `fetch`, no retry, no timeout, no response cap.
+## Entries
 
-## Errors
+| Entry | Directive | Contents |
+| :-- | :-- | :-- |
+| `@qeet-id/react` | none on the entry; on each client module | provider, hooks, components, `QeetIDError`, `VERSION`, types |
+| `@qeet-id/react/contract` | none, no React | the contract's types, constants and helpers |
+| `@qeet-id/react/testing` | on the provider module | `QeetIDTestProvider`, `createTestSession` |
+| `@qeet-id/react/styles.css` | — | the optional stylesheet |
 
-| Class | Use |
-|---|---|
-| `AuthenticationError` | API failures — `status`, `code`, `message`, `requestId`, with **getters** (`get isUnauthorized()`) |
-| `WebAuthnError` | `reason: "unsupported" \| "cancelled" \| "failed"` — unique to this SDK |
+## Tests
 
-Node uses **methods** (`isUnauthorized()`); Go uses methods on a pointer. Same envelope, three
-shapes. There is deliberately **no `AuthorizationError`** — ADR-0002.
-
-## Deliberate API gaps — ADR-0002
-
-Not missing. **Refused**, because the backend has no session-authenticated endpoint for them:
-
-- no `usePermission`, no `useRole`
-- no `useUsers`, no `useOrganizations` admin listings
-- no `AuthorizationError`
-
-Only the API-key management API can resolve those, and a browser must never hold an API key.
-**Adding one of these hooks would mean inventing an endpoint.**
-
-## Field casing — a deliberate contradiction with the Node SDK
-
-`src/client/client.ts` maps snake_case API responses into camelCase domain types
-(`r.client_name` → `clientName`, `r.branding.logo_url` → `logoUrl`).
-
-**`qeet-id-node`'s ADR-0004 does the exact opposite** — it keeps wire fields snake_case verbatim.
-Same organization, opposite decisions, each correct for its consumer. Do not harmonise them.
-
-## Conventions
-
-- **`"use client"` on every hook and JSX file** — required for RSC consumers.
-- **Three sanctioned hook shapes**: context-read · flow-with-`status`-union ·
-  data-fetching-with-`isLoaded`. Do not invent a fourth.
-- **One component per file, named after its export**; `Button` suffix retained (ADR-0003),
-  deliberately mirroring Clerk's surface so the SDK is familiar.
-- Widgets take `appearance`, applied via `applyAppearance` and `--qeetid-*` CSS variables.
-
-## Testing
-
-4 test files + `test/setup.ts`; vitest with `environment: "jsdom"`, `globals: false`,
-`@testing-library/react` + `jest-dom`. ~28 `it()` blocks across `client`, `components`, `hooks`,
-`provider`. **No mock-server helper** — unlike the Node SDK's `test/helpers/mock-transport.ts`.
-
-## CI/CD
-
-`ci.yml` (Node 22/24/26) runs install, typecheck, **lint**, build, `test:coverage`.
-**`qeet-id-node`'s `ci.yml` omits lint; this one includes it** — a parity gap between sibling repos.
-`lint.yml`, `security.yml` (audit + gitleaks), `codeql.yml`, `release.yml` (tag `v*` → npm publish).
-
-## Security-critical areas
-
-| Area | Path | Risk | Review |
-|---|---|---|---|
-| WebAuthn ceremonies | `src/client/webauthn.ts` | **Critical** | Security review |
-| CSRF handling | `src/client/http.ts` | **Critical** | Security review |
-| Preference storage | `src/utils/storage.ts` | High | **Never store a credential here** |
-
-`SECURITY.md` is explicit that this SDK **never has access to the session token** (HttpOnly), so
-realistic findings are CSRF, DOM injection, or WebAuthn correctness — not token theft.
-
-## Known constraints
-
-- **`apiUrl` has no default** — embedded mode fails closed if the integrator omits it.
-- **No version export**, contradicting `SECURITY.md`'s reporting instructions.
-- No retry/timeout — a flaky network surfaces directly to the user, by design.
-- Not published; contract changes are currently free.
-- The camelCase mapping means this SDK's types are **not** interchangeable with the Node SDK's.
-
-## Documentation authority
-
-Source > tests > `CONTRIBUTING.md` > README. The **API contract** is owned by `qeet-id-server`.
+`test/` with Vitest, jsdom, Testing Library and axe-core: the store, the transport, the contract,
+the provider and hooks (render counts, StrictMode), every component (roles, keyboard, focus, axe),
+the testing entry, server rendering, hydration and the built package. The rendering tests also run on
+React 18.3 (`vitest --project react-18`, from `test/react-18`).
