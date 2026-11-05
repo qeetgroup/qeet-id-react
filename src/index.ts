@@ -4,10 +4,11 @@
  * server.
  *
  * ```tsx
- * import { QeetIDProvider, useSession } from "@qeet-id/react";
+ * import { QeetIDProvider, SignedIn, SignedOut, SignInButton, SignOutButton } from "@qeet-id/react";
  *
  * <QeetIDProvider initialSession={session}>
- *   <App />
+ *   <SignedOut><SignInButton /></SignedOut>
+ *   <SignedIn><SignOutButton /></SignedIn>
  * </QeetIDProvider>
  * ```
  *
@@ -30,6 +31,20 @@ export { useOrganization } from "./hooks/useOrganization";
 export type { UseOrganizationResult } from "./hooks/useOrganization";
 export { useQeetID } from "./hooks/useQeetID";
 export type { QeetIDActions } from "./hooks/useQeetID";
+
+export { SignedIn } from "./components/SignedIn";
+export type { SignedInProps } from "./components/SignedIn";
+export { SignedOut } from "./components/SignedOut";
+export type { SignedOutProps } from "./components/SignedOut";
+export { Protect } from "./components/Protect";
+export type { ProtectProps } from "./components/Protect";
+export { SignInButton } from "./components/SignInButton";
+export type { SignInButtonProps } from "./components/SignInButton";
+export { SignUpButton } from "./components/SignUpButton";
+export type { SignUpButtonProps } from "./components/SignUpButton";
+export { SignOutButton } from "./components/SignOutButton";
+export type { SignOutButtonProps } from "./components/SignOutButton";
+export type { TriggerButtonProps } from "./components/internal/Trigger";
 
 export type { AccessCheck } from "./core/access";
 export type { SignInOptions } from "./core/navigation";
