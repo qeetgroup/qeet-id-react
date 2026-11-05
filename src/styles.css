@@ -1,0 +1,324 @@
+/*
+ * @qeet-id/react/styles.css: the optional look of <UserButton> and
+ * <OrganizationSwitcher>. Nothing loads it for you; import it once:
+ *
+ *   import "@qeet-id/react/styles.css";
+ *
+ * Every value is a custom property with layered fallbacks:
+ *   var(--qeet-id-…, var(--qx-…, <Qeet default>))
+ * Set a --qeet-id-* property to change one thing. An app that loads Qeetrix's
+ * tokens matches Qeetrix without doing anything; one that doesn't gets Qeet's
+ * defaults, copied from @qeetrix/tokens (light and dark).
+ *
+ * Dark: follows prefers-color-scheme, and data-theme="dark" (or "light") on
+ * any ancestor wins over it. Right to left: logical properties throughout.
+ * Everything is in the qeet-id cascade layer, so the app's own unlayered rules
+ * win without a specificity fight. No inline styles are ever injected, so a
+ * strict Content-Security-Policy needs no exception.
+ */
+
+@layer qeet-id {
+  .qeet-id-user-button,
+  .qeet-id-organization-switcher {
+    /* Light defaults, from @qeetrix/tokens (:root). */
+    --_qeet-id-surface-default: oklch(1 0 0);
+    --_qeet-id-text-default: oklch(0.16 0.001 60);
+    --_qeet-id-text-subtle: oklch(0.4 0.002 60);
+    --_qeet-id-text-danger: oklch(0.522 0.189 21.633);
+    --_qeet-id-border-default: oklch(0.912 0.003 60);
+    --_qeet-id-border-focus: oklch(0.585 0.1835 40);
+    --_qeet-id-neutral-subtle: oklch(0.958 0.003 60);
+    --_qeet-id-hover: oklch(0.11 0 0 / 0.06);
+    --_qeet-id-selected: oklch(0.952 0.03 61.16);
+    --_qeet-id-brand-subtle: oklch(0.952 0.03 61.16);
+    --_qeet-id-text-brand: oklch(0.47 0.145 36);
+    --_qeet-id-shadow-overlay:
+      0px 4px 8px -4px oklch(0.1543 0 0 / 0.08), 0px 12px 24px -8px oklch(0.1543 0 0 / 0.12), 0px 0px 0px 1px oklch(0.1543 0 0 / 0.05);
+
+    /* The SDK's properties: set these to change the look. */
+    --qeet-id-color-surface: var(--qx-color-surface-overlay, var(--_qeet-id-surface-default));
+    --qeet-id-color-text: var(--qx-color-text-default, var(--_qeet-id-text-default));
+    --qeet-id-color-text-subtle: var(--qx-color-text-subtle, var(--_qeet-id-text-subtle));
+    --qeet-id-color-text-danger: var(--qx-color-text-danger, var(--_qeet-id-text-danger));
+    --qeet-id-color-border: var(--qx-color-border-default, var(--_qeet-id-border-default));
+    --qeet-id-color-focus: var(--qx-color-border-focus, var(--_qeet-id-border-focus));
+    --qeet-id-color-hover: var(--qx-color-overlay-hover, var(--_qeet-id-hover));
+    --qeet-id-color-selected: var(--qx-color-bg-selected, var(--_qeet-id-selected));
+    --qeet-id-color-avatar: var(--qx-color-bg-brand-subtle, var(--_qeet-id-brand-subtle));
+    --qeet-id-color-avatar-text: var(--qx-color-text-brand, var(--_qeet-id-text-brand));
+    --qeet-id-color-trigger: var(--qx-color-bg-neutral-subtle, var(--_qeet-id-neutral-subtle));
+    --qeet-id-shadow-popover: var(--qx-shadow-overlay, var(--_qeet-id-shadow-overlay));
+    --qeet-id-radius-control: var(--qx-radius-control, 4px);
+    --qeet-id-radius-popover: var(--qx-radius-overlay, 4px);
+    --qeet-id-radius-avatar: var(--qx-radius-full, 9999px);
+    --qeet-id-font-family: var(--qx-font-family-sans, "Qeet Sans", ui-sans-serif, system-ui, sans-serif);
+    --qeet-id-font-size: var(--qx-typography-body-md-font-size, 0.875rem);
+    --qeet-id-font-size-small: var(--qx-typography-body-sm-font-size, 0.75rem);
+    --qeet-id-line-height: var(--qx-typography-body-md-line-height, 1.428572);
+    --qeet-id-size-control: var(--qx-size-control-md, 2rem);
+    --qeet-id-size-target: var(--qx-size-target-min, 24px);
+    --qeet-id-size-avatar: 1.75rem;
+    --qeet-id-size-icon: var(--qx-size-icon-sm, 16px);
+    --qeet-id-space-xs: var(--qx-space-gap-xs, 0.25rem);
+    --qeet-id-space-sm: var(--qx-space-gap-sm, 0.5rem);
+    --qeet-id-space-md: var(--qx-space-gap-md, 0.75rem);
+    --qeet-id-popover-width: 15rem;
+    --qeet-id-z-popover: var(--qx-z-dropdown, 1000);
+
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-family: var(--qeet-id-font-family);
+    font-size: var(--qeet-id-font-size);
+    line-height: var(--qeet-id-line-height);
+    color: var(--qeet-id-color-text);
+  }
+
+  /* Dark defaults, from @qeetrix/tokens ([data-qx-color-scheme="dark"]). */
+  @media (prefers-color-scheme: dark) {
+    :is(.qeet-id-user-button, .qeet-id-organization-switcher):not([data-theme="light"], [data-theme="light"] *) {
+      --_qeet-id-surface-default: oklch(0.235 0.001 60);
+      --_qeet-id-text-default: oklch(0.958 0.003 60);
+      --_qeet-id-text-subtle: oklch(0.857 0.003 60);
+      --_qeet-id-text-danger: oklch(0.73 0.165 20);
+      --_qeet-id-border-default: oklch(0.34 0.0015 60);
+      --_qeet-id-border-focus: oklch(0.686 0.1855 47.163);
+      --_qeet-id-neutral-subtle: oklch(0.268 0.001 60);
+      --_qeet-id-hover: oklch(1 0 0 / 0.08);
+      --_qeet-id-selected: oklch(0.2551 0.0268 47.571);
+      --_qeet-id-brand-subtle: oklch(0.2351 0.0194 47.753);
+      --_qeet-id-text-brand: oklch(0.77 0.156 54.793);
+      --_qeet-id-shadow-overlay:
+        0px 4px 8px -4px oklch(0 0 0 / 0.45), 0px 12px 24px -8px oklch(0 0 0 / 0.5), 0px 0px 0px 1px oklch(1 0 0 / 0.07),
+        inset 0px 1px 0px 0px oklch(1 0 0 / 0.04);
+    }
+  }
+
+  :is([data-theme="dark"], [data-theme="dark"] *):is(.qeet-id-user-button, .qeet-id-organization-switcher) {
+    --_qeet-id-surface-default: oklch(0.235 0.001 60);
+    --_qeet-id-text-default: oklch(0.958 0.003 60);
+    --_qeet-id-text-subtle: oklch(0.857 0.003 60);
+    --_qeet-id-text-danger: oklch(0.73 0.165 20);
+    --_qeet-id-border-default: oklch(0.34 0.0015 60);
+    --_qeet-id-border-focus: oklch(0.686 0.1855 47.163);
+    --_qeet-id-neutral-subtle: oklch(0.268 0.001 60);
+    --_qeet-id-hover: oklch(1 0 0 / 0.08);
+    --_qeet-id-selected: oklch(0.2551 0.0268 47.571);
+    --_qeet-id-brand-subtle: oklch(0.2351 0.0194 47.753);
+    --_qeet-id-text-brand: oklch(0.77 0.156 54.793);
+    --_qeet-id-shadow-overlay:
+      0px 4px 8px -4px oklch(0 0 0 / 0.45), 0px 12px 24px -8px oklch(0 0 0 / 0.5), 0px 0px 0px 1px oklch(1 0 0 / 0.07),
+      inset 0px 1px 0px 0px oklch(1 0 0 / 0.04);
+  }
+
+  /* The buttons that open the menus. */
+  .qeet-id-user-button__trigger,
+  .qeet-id-organization-switcher__trigger,
+  .qeet-id-organization-switcher__current {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--qeet-id-space-sm);
+    min-block-size: var(--qeet-id-size-control);
+    min-inline-size: var(--qeet-id-size-target);
+    margin: 0;
+    padding-block: 0;
+    padding-inline: var(--qeet-id-space-xs);
+    border: 0;
+    border-radius: var(--qeet-id-radius-control);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+  }
+
+  .qeet-id-user-button__trigger,
+  .qeet-id-organization-switcher__trigger {
+    cursor: pointer;
+  }
+
+  .qeet-id-organization-switcher__trigger {
+    padding-inline: var(--qeet-id-space-sm);
+    background: var(--qeet-id-color-trigger);
+  }
+
+  .qeet-id-user-button__trigger:hover,
+  .qeet-id-organization-switcher__trigger:hover,
+  .qeet-id-user-button__item:hover,
+  .qeet-id-organization-switcher__item:hover {
+    background: var(--qeet-id-color-hover);
+  }
+
+  .qeet-id-user-button__trigger:focus-visible,
+  .qeet-id-organization-switcher__trigger:focus-visible,
+  .qeet-id-user-button__item:focus-visible,
+  .qeet-id-organization-switcher__item:focus-visible {
+    outline: 2px solid var(--qeet-id-color-focus);
+    outline-offset: 1px;
+  }
+
+  .qeet-id-organization-switcher__trigger[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  .qeet-id-organization-switcher__chevron {
+    flex: none;
+    inline-size: var(--qeet-id-size-icon);
+    block-size: var(--qeet-id-size-icon);
+    color: var(--qeet-id-color-text-subtle);
+  }
+
+  /* Avatars: a picture, initials, or a person icon. */
+  .qeet-id-user-button__avatar,
+  .qeet-id-organization-switcher__avatar {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    inline-size: var(--qeet-id-size-avatar);
+    block-size: var(--qeet-id-size-avatar);
+    border-radius: var(--qeet-id-radius-avatar);
+    background: var(--qeet-id-color-avatar);
+    color: var(--qeet-id-color-avatar-text);
+    font-size: var(--qeet-id-font-size-small);
+    font-weight: 600;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .qeet-id-organization-switcher__avatar {
+    --qeet-id-size-avatar: 1.25rem;
+    border-radius: var(--qeet-id-radius-control);
+  }
+
+  .qeet-id-user-button__avatar-image {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .qeet-id-user-button__name,
+  .qeet-id-organization-switcher__name,
+  .qeet-id-organization-switcher__item-name {
+    overflow: hidden;
+    max-inline-size: 16rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* The menus. */
+  .qeet-id-user-button__popover,
+  .qeet-id-organization-switcher__popover {
+    position: absolute;
+    inset-block-start: calc(100% + var(--qeet-id-space-xs));
+    z-index: var(--qeet-id-z-popover);
+    box-sizing: border-box;
+    min-inline-size: var(--qeet-id-popover-width);
+    max-inline-size: min(22rem, calc(100vw - 2 * var(--qeet-id-space-md)));
+    padding: var(--qeet-id-space-xs);
+    border-radius: var(--qeet-id-radius-popover);
+    background: var(--qeet-id-color-surface);
+    box-shadow: var(--qeet-id-shadow-popover);
+  }
+
+  .qeet-id-user-button__popover {
+    inset-inline-end: 0;
+  }
+
+  .qeet-id-organization-switcher__popover {
+    inset-inline-start: 0;
+    max-block-size: min(24rem, 60vh);
+    overflow-y: auto;
+  }
+
+  .qeet-id-user-button__header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--qeet-id-space-sm);
+    border-block-end: 1px solid var(--qeet-id-color-border);
+    margin-block-end: var(--qeet-id-space-xs);
+  }
+
+  .qeet-id-user-button__header-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .qeet-id-user-button__header-email {
+    color: var(--qeet-id-color-text-subtle);
+    font-size: var(--qeet-id-font-size-small);
+    overflow-wrap: anywhere;
+  }
+
+  .qeet-id-user-button__menu,
+  .qeet-id-organization-switcher__menu {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .qeet-id-user-button__item,
+  .qeet-id-organization-switcher__item {
+    display: flex;
+    align-items: center;
+    gap: var(--qeet-id-space-sm);
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: var(--qeet-id-size-control);
+    margin: 0;
+    padding-block: var(--qeet-id-space-xs);
+    padding-inline: var(--qeet-id-space-sm);
+    border: 0;
+    border-radius: var(--qeet-id-radius-control);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .qeet-id-user-button__item[aria-disabled="true"] {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  .qeet-id-organization-switcher__item[aria-checked="true"] {
+    background: var(--qeet-id-color-selected);
+  }
+
+  .qeet-id-organization-switcher__item-name {
+    flex: 1;
+  }
+
+  .qeet-id-organization-switcher__check {
+    flex: none;
+    inline-size: var(--qeet-id-size-icon);
+    block-size: var(--qeet-id-size-icon);
+    color: var(--qeet-id-color-avatar-text);
+  }
+
+  .qeet-id-user-button__separator {
+    margin-block: var(--qeet-id-space-xs);
+    margin-inline: 0;
+    border: 0;
+    border-block-start: 1px solid var(--qeet-id-color-border);
+  }
+
+  .qeet-id-organization-switcher__status {
+    color: var(--qeet-id-color-text-subtle);
+    font-size: var(--qeet-id-font-size-small);
+  }
+
+  @media (forced-colors: active) {
+    .qeet-id-user-button__popover,
+    .qeet-id-organization-switcher__popover {
+      border: 1px solid CanvasText;
+    }
+
+    .qeet-id-organization-switcher__item[aria-checked="true"] {
+      outline: 1px solid Highlight;
+    }
+  }
+}

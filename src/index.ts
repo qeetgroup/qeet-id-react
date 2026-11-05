@@ -4,11 +4,11 @@
  * server.
  *
  * ```tsx
- * import { QeetIDProvider, SignedIn, SignedOut, SignInButton, SignOutButton } from "@qeet-id/react";
+ * import { QeetIDProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@qeet-id/react";
  *
  * <QeetIDProvider initialSession={session}>
  *   <SignedOut><SignInButton /></SignedOut>
- *   <SignedIn><SignOutButton /></SignedIn>
+ *   <SignedIn><UserButton /></SignedIn>
  * </QeetIDProvider>
  * ```
  *
@@ -44,6 +44,11 @@ export { SignUpButton } from "./components/SignUpButton";
 export type { SignUpButtonProps } from "./components/SignUpButton";
 export { SignOutButton } from "./components/SignOutButton";
 export type { SignOutButtonProps } from "./components/SignOutButton";
+export { UserButton } from "./components/UserButton";
+export type { UserButtonMenuItem, UserButtonPart, UserButtonProps } from "./components/UserButton";
+export { OrganizationSwitcher } from "./components/OrganizationSwitcher";
+export type { OrganizationSwitcherPart, OrganizationSwitcherProps } from "./components/OrganizationSwitcher";
+export type { StylingProps } from "./components/internal/classNames";
 export type { TriggerButtonProps } from "./components/internal/Trigger";
 
 export type { AccessCheck } from "./core/access";

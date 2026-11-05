@@ -31,7 +31,9 @@
   "engines": {
     "node": ">=22.12.0"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.cts",
@@ -63,6 +65,7 @@
         "default": "./dist/contract.cjs"
       }
     },
+    "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
   "files": [
@@ -89,7 +92,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check:package": "publint --strict && attw --pack .",
+    "check:package": "publint --strict && attw --pack . --exclude-entrypoints ./styles.css",
     "verify": "bun run typecheck && bun run check && bun run test && bun run build && bun run check:package",
     "prepublishOnly": "bun run verify"
   },
