@@ -226,7 +226,7 @@ export function sessionRoutes(basePath: string = DEFAULT_BASE_PATH): SessionRout
   if (typeof basePath !== "string" || !/^\/(?!\/)[^?#\\\s\u0000-\u001f\u007f]*$/.test(basePath)) {
     throw new TypeError(`basePath must be a path on this site, such as "${DEFAULT_BASE_PATH}"; got ${JSON.stringify(basePath)}.`);
   }
-  const base = basePath.replace(/\/+$/, "");
+  const base = trimTrailingSlashes(basePath);
   return Object.freeze({
     signIn: `${base}/${SESSION_ROUTES.signIn}`,
     signUp: `${base}/${SESSION_ROUTES.signUp}`,
@@ -338,4 +338,15 @@ function texts(value: unknown, field: string): readonly string[] {
 function instant(value: unknown, field: string): string {
   if (typeof value !== "string" || Number.isNaN(Date.parse(value))) throw new TypeError(`${field} must be an ISO 8601 date-time.`);
   return value;
+}
+
+/**
+ * Removes the trailing slashes from a URL or path, in linear time. It replaces
+ * `value.replace(/\/+$/, "")`, whose backtracking turns quadratic on a string
+ * of many slashes that don't end it (a slow-regex denial of service).
+ */
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end--;
+  return end === value.length ? value : value.slice(0, end);
 }
