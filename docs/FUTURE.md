@@ -1,36 +1,23 @@
-# Future
+# Future work
 
-Capabilities other CIAM React SDKs (Clerk, Auth0 React, WorkOS AuthKit)
-expose that `@qeet-id/react` doesn't, because the Qeet ID *backend* doesn't
-have a session-authenticated endpoint for them yet. These aren't SDK gaps
-to fill with stub hooks that would always fail at runtime — they're named
-here so this SDK adds real coverage the moment the backend ships the
-missing endpoint.
+What this SDK leaves for later, and what it waits for.
 
-## No self-service permissions/roles
+## Waiting for Qeet ID
 
-`usePermission`/`usePermissions`/`useRole`/`useRoles` and the
-`RequirePermission`/`RequireRole` components don't exist in this package.
-The real backend's RBAC surface (`GET /v1/check`, effective-permissions
-lookup, role assignment) is only reachable with a server-side API key — it
-has no session-cookie-authenticated "what can *I* currently do" endpoint a
-browser could call safely. `RequireAuth` (gates on sign-in state only) is
-the one authorization component that *is* in scope, since it needs no
-backend call at all.
+| When Qeet ID… | This SDK |
+| :-- | :-- |
+| lets an application ask for an organisation at sign-in (an authorize parameter) | nothing changes: `signIn({ organization })` already sends it; the server SDKs pass it on |
+| takes a login hint at authorize | nothing changes: `signIn({ loginHint })` already sends it |
+| takes a sign-up hint at authorize | nothing changes: `sign-up` is already its own route |
+| lets an application switch a person's organisation | nothing changes: the server answers `switch-organization` with a session instead of `501` |
+| gives applications a person's organisations | add an optional `organizations` to the session (a minor version); `<OrganizationSwitcher>` reads it when the app passes none |
 
-## No admin-listing hooks
+These are gaps in `qeet-id-server` today (see "What Qeet ID provides" in
+[session-contract.md](session-contract.md)).
 
-`useUsers`/`useOrganizations` (plural — "list every user/org") don't exist.
-There's no session-authenticated admin-listing endpoint for a browser to
-call; listing users/organizations across a tenant is a management-API
-operation (`@qeet-id/node`), not something an end-user's own session can
-do. `useUser`/`useOrganization` (singular, "my own") and
-`useOrganizationList` (every organization the signed-in user belongs to,
-from `GET /v1/me/organizations`) are in scope and already shipped.
+## Possible additions
 
-## No organization creation from the browser
-
-`POST /v1/tenants` answers with a token pair, so the hosted-login cookie
-doesn't reach it. `<CreateOrganization/>` collects the name and hands it to
-the app's `onCreate`, whose server makes that call with the signed-in user's
-access token.
+- `locale`, `updatedAt`, `phoneNumber`, `authenticatedAt` (`auth_time`) on the session, as optional
+  keys, if apps ask for them.
+- A `<SessionLoading>`/`<SessionUnavailable>` pair of gates, if `useSession().status` proves awkward.
+- More `<UserButton>` item kinds (icons, groups), keeping the APG menu pattern.

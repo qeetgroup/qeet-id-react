@@ -1,8 +1,9 @@
 name: Release
 
+# Run by hand from main (Actions > Release > Run workflow), choosing the part of
+# the version to bump. Merging into main never publishes by itself: the version
+# is decided when a release is run, not by whichever merge came last.
 on:
-  push:
-    branches: [main] # every merge to main gates, publishes, then tags
   workflow_dispatch:
     inputs:
       bump:
@@ -59,6 +60,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - run: bun install --frozen-lockfile
+      - run: bun run install:react-18
 
       # npm publishes the version in package.json, not the git tag, so the two
       # have to agree. Bump before the gate so the built artifact carries the
@@ -72,6 +74,7 @@ jobs:
       - run: bun run check
       - run: bun run test
       - run: bun run build
+      - run: bun run check:package
 
       - name: Publish to npm
         run: npm publish --access public --provenance

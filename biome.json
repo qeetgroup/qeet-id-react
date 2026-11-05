@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.5/schema.json",
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -12,6 +12,14 @@
       "semicolons": "always",
       "trailingCommas": "all",
       "arrowParentheses": "always"
+    }
+  },
+  "css": {
+    "formatter": {
+      "enabled": true
+    },
+    "linter": {
+      "enabled": true
     }
   },
   "assist": {
@@ -36,15 +44,15 @@
         "noUnusedVariables": "error",
         "noUnusedImports": "error",
         "useHookAtTopLevel": "error",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "error"
       },
       "a11y": {
-        "noSvgWithoutTitle": "warn",
-        "noStaticElementInteractions": "warn",
-        "useAriaPropsSupportedByRole": "warn"
+        "noSvgWithoutTitle": "error",
+        "noStaticElementInteractions": "error",
+        "useAriaPropsSupportedByRole": "error"
       },
       "security": {
-        "noDangerouslySetInnerHtml": "warn"
+        "noDangerouslySetInnerHtml": "error"
       }
     }
   },
@@ -56,14 +64,14 @@
           "style": {
             "noNonNullAssertion": "off"
           },
-          "suspicious": {
-            "noDocumentCookie": "off"
+          "correctness": {
+            "noComponentHookFactories": "off"
           }
         }
       }
     }
   ],
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/coverage", "!bun.lock"]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/coverage", "!**/bun.lock", "!**/*.md", "!**/*.yml", "!**/*.yaml"]
   }
 }

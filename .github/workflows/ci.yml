@@ -18,8 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # package.json requires >=22 (18 and 20 are end-of-life). The tests run
-        # on Node, not bun: Node is what apps build and server-render with.
+        # Every supported Node.js line (package.json requires >=22.12). The tests
+        # run on Node, not bun: Node is what apps build and server-render with.
         node: ['22', '24', '26']
     steps:
       - uses: actions/checkout@v7
@@ -33,7 +33,11 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - run: bun install --frozen-lockfile
+      # React 18.3 for the react-18 test project.
+      - run: bun run install:react-18
       - run: bun run typecheck
-      - run: bun run lint
       - run: bun run build
+      # Every test on React 19, and the rendering tests again on React 18.3.
       - run: bun run test:coverage
+      # The published package's exports and types, in every resolution mode.
+      - run: bun run check:package

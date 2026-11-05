@@ -2,23 +2,30 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "types": ["node"],
-    "declaration": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "esModuleInterop": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "isolatedModules": true,
+    "isolatedDeclarations": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true
+    "noEmit": true,
+    // The examples import the package by name, as an app does.
+    "paths": {
+      "@qeet-id/react": ["./src/index.ts"],
+      "@qeet-id/react/contract": ["./src/contract.ts"],
+      "@qeet-id/react/testing": ["./src/testing.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
-  "exclude": ["dist", "node_modules", "examples"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx", "examples/**/*.tsx", "examples/**/*.ts"],
+  "exclude": ["test/react-18/node_modules"]
 }

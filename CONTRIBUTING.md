@@ -6,79 +6,41 @@
 git clone https://github.com/qeetgroup/qeet-id-react
 cd qeet-id-react
 bun install
-bun run verify   # typecheck + Biome check + test + build
+bun run verify   # React 18 test install + typecheck + Biome + tests + build + publint + attw
 ```
 
-Requires bun (the version in `package.json`'s `packageManager`) and
-Node.js 22+ — see `.nvmrc` for the version this repo is developed against.
-Biome lints and formats (`bun run check`, `bun run format`). React 18 or 19 as a peer dependency (not bundled).
+Requires Node.js 22.12 or later and bun (`packageManager` in `package.json`). Work lands on `develop`;
+`main` is reached by a pull request from `develop`.
 
 ## Conventions
 
-- **One package, organized by category folder**, same convention as the
-  sibling `qeet-id-node` SDK: `src/hooks/{authentication,identity}/`,
-  `src/components/{authentication,identity,authorization,common}/`,
-  `src/widgets/`. Every hook/component is still imported directly from the
-  package root (`import { useAuth, SignInButton } from "@qeet-id/react"`) —
-  the folders are source organization, not part of the public API shape.
-- **Every file that uses a hook or renders JSX starts with `"use client"`.**
-  This package supports being imported from a Next.js App Router Server
-  Component tree, so client boundaries must be explicit at every file that
-  needs one.
-- **Two hook shapes, pick the one that fits:**
-  - *Context-read* (`useAuth`, `useUser`) — no fetching, just projects
-    `useQeetIDState()`. No `useState`/`useEffect`.
-  - *Flow* (`useSignIn`, `useSignUp`, `useMFA`) — a `status` union
-    (`idle`/`loading`/`...`/`error`) driving prebuilt-form UI; every
-    failure is caught and converted to `{step: "error", error: string}`,
-    never rethrown — callers render from `status`, not `try`/`catch`.
-  - *Data-fetching* (`useSession`, `usePasskeys`, `useOrganizationList`) —
-    `isLoaded` + data + mutations + `refresh()`, loads on mount via
-    `useEffect`.
-- **Never wrap a fictional backend endpoint.** This package deliberately
-  ships no `usePermission`/`useRole`/`useUsers`/`useOrganizations` (plural,
-  admin-listing) hooks, because the real backend has no session-cookie
-  "my own permissions/roles" or admin-listing endpoint — only the
-  API-key-authenticated management API (`@qeet-id/node`) can do that. See
-  [docs/FUTURE.md](docs/FUTURE.md) before adding one back.
-- **Never let this package read or write the session token.** It's an
-  HttpOnly cookie by design. `src/utils/storage.ts` exists only for
-  non-sensitive UI preferences (e.g. "last used sign-in method") — never
-  store a credential there.
-- **Widgets** (`src/widgets/` — `<SignIn/>`, `<SignUp/>`, `<UserProfile/>`,
-  ...) accept an `appearance` prop merged with the provider-level default,
-  rendered via `--qeetid-*` CSS variables and `appearance.elements.*`
-  className overrides — see `src/widgets/utils.ts`'s `applyAppearance`
-  and any existing widget as a template.
-- **File-naming**: one component per file, named after the exported
-  component (`SignInButton.tsx` exports `SignInButton`, `UserMenu.tsx`
-  exports `UserButton`/`UserAvatar`) — matches Clerk's naming, which this
-  package intentionally mirrors since Qeet ID competes directly in the
-  same category. The one exception is a tightly-coupled mirror-image pair
-  with trivial, near-identical logic (`SignedIn`/`SignedOut` share one
-  file, `SignedIn.tsx`).
+- **The browser never calls Qeet ID and never holds a token** (ADR-0001). Everything goes through the
+  app's own routes, as [docs/session-contract.md](docs/session-contract.md) defines them.
+- **The contract is shared** with `@qeet-id/nextjs` and `@qeet-id/tanstack` (ADR-0002). Every session
+  field traces to Qeet ID's ID token, userinfo or management API; changing one is a coordinated change.
+- **Names:** PascalCase components and types, `use` + camelCase hooks, `<Component>Props` for props,
+  acronyms as words except the brand (`QeetID`). One component per file, named after its export.
+- **`"use client"`** starts every module that calls a hook or `createContext`, and no other (ADR-0004).
+- **Hooks** read the store through `useStoreState` with a selector that returns part of the state,
+  never a new object (ADR-0005).
+- **Components**: every string from the provider's `localization`; composites take `StylingProps` and
+  use BEM classes; no inline styles; menus use `useMenuButton` (WAI-ARIA APG).
+- **Styles** live only in `src/styles.css`, as `var(--qeet-id-…, var(--qx-…, default))` with logical
+  properties (ADR-0003).
+- **Zero runtime dependencies**, and no design-system dependency. Raise it before adding one.
 
 ## Tests
 
 ```bash
-bun run test          # vitest run (jsdom + @testing-library/react)
+bun run test            # React 19 and React 18.3
 bun run test:coverage
 ```
 
-## Adding a new hook or component
-
-1. Confirm the backend actually has an endpoint for it — check
-   `src/client/client.ts` first; if it needs a new `QeetIDClient` method,
-   verify the real route against the `qeet-id` backend source (or its
-   already-verified reference at `qeet-id/sdk/js/client/src/client.ts`)
-   before adding one.
-2. Add the file under the right category folder, following an existing
-   hook/component as a template for its shape (see the three hook shapes
-   above).
-3. Re-export it from the category's `index.ts` and the root `src/index.ts`.
-4. Update the resource table in `README.md`.
+Test what a person does: query by role and name, use the keyboard, run `expectAccessible` (axe) on each
+state. Stub the session routes with `mockSessionRoutes` from `test/helpers.ts`; use the fixtures in
+`test/fixtures.ts`. Rendering tests (`*.test.tsx`) also run on React 18.3.
 
 ## Reporting bugs
 
-Open an issue with the exact hook/component usage, expected vs. actual
-behavior, and the browser/React version.
+Open an issue with the component or hook, what you expected, what happened, the React version and
+`VERSION` from `@qeet-id/react`.
