@@ -9,7 +9,7 @@
 [![Server Components](https://img.shields.io/badge/Server%20Components-ready-000000?logo=nextdotjs&logoColor=white)](#-server-rendering-and-server-components)
 [![ESM + CJS](https://img.shields.io/badge/modules-ESM%20%2B%20CJS-F7DF1E)](#-typescript-and-modules)
 [![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-2EA043)](package.json)
-[![Tests](https://img.shields.io/badge/tests-366%20passing-2EA043)](test)
+[![Tests](https://img.shields.io/badge/tests-368%20passing-2EA043)](test)
 
 [📜 Session contract](docs/session-contract.md) · [🚀 Quick start](#-quick-start) · [🧩 Components](#-components) · [📝 Changelog](CHANGELOG.md) · [🏗️ Architecture](docs/architecture/ARCHITECTURE.md)
 
