@@ -18,8 +18,14 @@
     "declaration": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    // The examples import the package by name, as an app does.
+    "paths": {
+      "@qeet-id/react": ["./src/index.ts"],
+      "@qeet-id/react/contract": ["./src/contract.ts"],
+      "@qeet-id/react/testing": ["./src/testing.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx", "examples/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx", "examples/**/*.tsx", "examples/**/*.ts"],
   "exclude": ["test/react-18/node_modules"]
 }
