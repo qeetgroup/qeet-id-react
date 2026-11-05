@@ -153,7 +153,7 @@ The server reads the user's claims from the ID token at sign-in and may refresh 
 `roles` and `permissions` with `@qeet-id/node` and caches them in the session for a few minutes.
 
 **`roles` and `permissions` are display hints.** They decide what the UI shows, never what a person
-may do: the server checks every request again (Qeet ID's `POST /v1/check`, or its own rules).
+may do: the server checks every request again (Qeet ID's `GET /v1/check`, or its own rules).
 
 **Not carried**, though Qeet ID provides them: `locale`, `updated_at`, `phone_number`,
 `phone_number_verified`, `auth_time` and `sid`. A later minor version may add them as new keys.
