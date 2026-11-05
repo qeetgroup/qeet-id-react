@@ -113,6 +113,12 @@ export const FOCUS_CHECK_INTERVAL_MS = 5_000;
 const MAX_TIMER_MS = 2_147_483_647;
 /** How long after `expiresAt` the expiry check runs, so the server agrees the session has ended. */
 const EXPIRY_GRACE_MS = 1_000;
+/**
+ * Expiry checks run at most this often. When this browser's clock is ahead of
+ * the server's, a session can look expired to it while the server still
+ * reports it: it asks again a minute later, never in a loop.
+ */
+export const EXPIRY_RECHECK_MS = 60_000;
 
 /**
  * The session as one provider knows it: an external store for
@@ -133,6 +139,7 @@ export class SessionStore {
   #switchToken = 0;
   #pendingSignOut: Promise<void> | null = null;
   #lastCheckStartedAt = Number.NEGATIVE_INFINITY;
+  #lastExpiryCheckAt = Number.NEGATIVE_INFINITY;
   #starts = 0;
   #authErrorRead = false;
   #channel: TabChannel | null = null;
@@ -344,6 +351,8 @@ export class SessionStore {
         if (this.#inflight === request) this.#inflight = null;
         const error = asQeetIDError(cause, "The session check failed.");
         if (generation === this.#generation) this.#fail(error, "check");
+        // The session may still be over: ask again later rather than never.
+        if (reason === "expiry") this.#scheduleExpiry();
         throw error;
       },
     );
@@ -370,6 +379,8 @@ export class SessionStore {
       endReason,
       pendingAction: before.pendingAction,
     });
+    // An unchanged answer doesn't reschedule by itself; the expiry check must.
+    if (reason === "expiry" && this.#expiryTimer === undefined) this.#scheduleExpiry();
     if (!wasKnown || next === previous) return;
     this.#emit("onSessionChange", next, previous);
     if (next === null && endReason !== null) this.#emit("onSignOut", endReason);
@@ -449,9 +460,11 @@ export class SessionStore {
     this.#clearExpiry();
     const session = this.#state.session;
     if (this.#starts === 0 || session === null) return;
-    const delay = Math.min(Math.max(Date.parse(session.expiresAt) - now() + EXPIRY_GRACE_MS, 0), MAX_TIMER_MS);
+    const due = Math.max(Date.parse(session.expiresAt) + EXPIRY_GRACE_MS, this.#lastExpiryCheckAt + EXPIRY_RECHECK_MS);
+    const delay = Math.min(Math.max(due - now(), 0), MAX_TIMER_MS);
     this.#expiryTimer = setTimeout(() => {
       this.#expiryTimer = undefined;
+      this.#lastExpiryCheckAt = now();
       this.#check("expiry");
     }, delay);
   }

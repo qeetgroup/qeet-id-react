@@ -242,6 +242,34 @@ describe("SessionStore: expiry and revocation", () => {
     stop();
   });
 
+  it("asks again a minute later, never in a loop, when this browser's clock is ahead of the server's", async () => {
+    const past: Session = { ...meera, expiresAt: "2026-11-05T20:00:00.000Z" };
+    const { store, getSession } = setup({ initialSession: past }, { getSession: async () => JSON.parse(JSON.stringify(past)) });
+    const stop = store.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getSession).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(59_000);
+    expect(getSession).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(getSession).toHaveBeenCalledTimes(2);
+    expect(store.getSnapshot().status).toBe("signed-in");
+    stop();
+  });
+
+  it("asks again later when the expiry check fails", async () => {
+    const { store, getSession } = setup(
+      { initialSession: meera },
+      { getSession: vi.fn().mockRejectedValueOnce(new TypeError("Failed to fetch")).mockResolvedValue(null) },
+    );
+    const stop = store.start();
+    await vi.advanceTimersByTimeAsync(31 * 60 * 1000);
+    expect(store.getSnapshot()).toMatchObject({ status: "signed-in", error: expect.objectContaining({ code: "network_error" }) });
+    await vi.advanceTimersByTimeAsync(60 * 1000);
+    expect(getSession).toHaveBeenCalledTimes(2);
+    expect(store.getSnapshot()).toMatchObject({ status: "signed-out", endReason: "expired", error: null });
+    stop();
+  });
+
   it("calls a session that ends before expiresAt revoked", async () => {
     const { store, events } = setup({ initialSession: meera }, { getSession: async () => null });
     await store.refresh();

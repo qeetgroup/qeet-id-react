@@ -20,7 +20,7 @@ across tabs, focus and expiry, and re-render as little as possible.
   later failed check keeps the last known session and sets `error`. A session that ends records why:
   `signed-out`, `expired` or `revoked`.
 - **Freshness without polling**: a check on focus (at most every five seconds), on reconnection, at
-  `expiresAt`, and when another tab says something changed (`BroadcastChannel`, no personal data).
+  `expiresAt` (at most once a minute, so a fast browser clock can't loop), and when another tab says something changed (`BroadcastChannel`, no personal data).
   Checks on their way are shared; an action's answer makes an older check's answer stale.
 - **Actions** are bound once per store, so their identities never change.
 
