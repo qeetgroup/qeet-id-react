@@ -6,57 +6,104 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+A rebuild of the whole SDK for hosted login. People sign in, sign up, do MFA and passkeys on Qeet ID's
+hosted pages; the app's own server keeps the tokens; this package renders the session that server
+reports. The package has never been published, so these breaking changes ship without a major
+version.
+
 ### Added
 
-- Setting up a second factor during sign-in and sign-up, for an organisation
-  that requires MFA. When the account has no second factor, `signIn`/`signUp`
-  answer a `needs_mfa` challenge with `enrollmentRequired` (and
-  `enrollmentDueAt` during the organisation's grace period).
-  `client.startMfaEnrollment` starts an authenticator app; `verifyMfa` with a
-  code from it completes the challenge and now returns `{ recoveryCodes }` —
-  the account's new recovery codes, shown once; `client.skipMfaEnrollment`
-  puts the setup off while the grace period runs. `useSignIn`/`useSignUp` add
-  the `needs_mfa_enrollment` and `recovery_codes` steps with
-  `startEnrollment`, `skipEnrollment` and `finish`, and `<SignIn/>`/`<SignUp/>`
-  render them.
+- **The session contract** between the browser and the app's server, as types and helpers in the new
+  server-safe entry `@qeet-id/react/contract` and in
+  [docs/session-contract.md](docs/session-contract.md): six routes under a configurable base path
+  (default `/auth`: `sign-in`, `sign-up`, `callback`, `session`, `sign-out`, `switch-organization`),
+  their JSON, the error envelope and codes, the `X-Qeet-ID-Request: 1` CSRF header, the same-origin
+  return-path rule (`safeReturnTo`), `?authError=` for a failed sign-in, and `parseSession`. Every
+  session field is traced to Qeet ID's ID token, userinfo or management API. `@qeet-id/nextjs` and
+  `@qeet-id/tanstack` implement it.
+- **`<QeetIDProvider>`** reads the session from `GET {basePath}/session`, or takes `initialSession`
+  from a server render (no flicker, no hydration mismatch, no request). It checks again on focus (at
+  most every five seconds), on reconnection and at `expiresAt`; tells other tabs about a sign-out or a
+  switch over `BroadcastChannel`; reports a failed sign-in from the callback and removes it from the
+  address bar; and calls `onSessionChange`, `onSignOut(reason)` and `onError`. Props: `basePath`,
+  `refetchOnWindowFocus`, `refetchOnReconnect`, `syncTabs`, `localization`.
+- **Session states**: `status` is `loading`, `signed-in`, `signed-out` or `unavailable` (the first
+  check failed); `error`, `endReason` (`signed-out`, `expired`, `revoked`) and `pendingAction`
+  (`sign-out`, `switch-organization`).
+- **Hooks**: `useSession` (state, `has()` and every action), `useUser`, `useOrganization` (the
+  organisation, roles, permissions, `has()`, switching) and `useQeetID` (the actions only, with stable
+  identities). Each re-renders only when its own part of the session changes.
+- **Components**: `<Protect>` (role, permission or condition, with `fallback`, `loading` and
+  `redirectToSignIn`); `<UserButton>` (avatar with picture, initials and icon fallbacks; a menu with
+  the name, email, the app's own items and Sign out); `<OrganizationSwitcher>` (radio items, live
+  status, `afterSwitchUrl`, `onSwitch`). Both are WAI-ARIA APG menu buttons with full keyboard
+  support, work right to left, and take `className`, `classNames` and `unstyled`.
+- **`@qeet-id/react/styles.css`**, an optional stylesheet on `--qeet-id-*` custom properties that fall
+  back to Qeetrix's `--qx-*` tokens and then to Qeet's defaults; light and dark; in `@layer qeet-id`.
+- **`@qeet-id/react/testing`**: `QeetIDTestProvider` and `createTestSession`, to render the app's own
+  components with any session and no server.
+- **`QeetIDError`** with a stable `code` and `status`, and **`VERSION`**.
+- Every string the components show or announce is in `localization`, with `{name}` and
+  `{organization}` placeholders.
+- **CommonJS** beside the ES module build, one file per module, with `"use client"` kept on exactly
+  the modules that use hooks or context.
 
 ### Changed
 
-- **Requires Node.js 22 or later** for tooling (was 18.17). Node 18 and 20
-  are end-of-life, and the test toolchain no longer runs on them; CI tests on
-  Node 22, 24 and 26. The React peer range is unchanged.
-- **Built with bun and Biome.** bun replaces pnpm (`bun.lock`,
-  `packageManager: bun@1.4.3`), and Biome replaces ESLint and Prettier for
-  linting and formatting (`biome.json`, with the rules of hooks and the
-  console's accessibility checks). `bun run verify` is the gate: typecheck,
-  Biome check, tests and build. Publishing still uses npm, for provenance.
-  Every dev dependency is on its latest release (Vite 8, vitest 5, jsdom 30,
-  vite-plugin-dts 5, @vitejs/plugin-react 6, @testing-library/jest-dom 7,
-  @types/node 26, React 19.3 for the tests). TypeScript is pinned to 6:
-  the declaration bundle (API Extractor) can't read TypeScript 7.
-  `<OrganizationSwitcher/>`'s menu is a list of buttons with `aria-current`
-  on the active organization, not a listbox of options that couldn't take
-  focus.
-- `useUser` reads the signed-in user's profile in embedded mode:
-  `client.currentUser()` merges the session's ids (`GET /v1/auth/me`) with
-  the profile (`GET /v1/me`), so `email`, `displayName`, `avatarUrl`,
-  `emailVerified`, `phone` and `status` are filled. Before, it returned the
-  raw `/v1/auth/me` body (snake_case ids, no profile), and `useUser` never
-  called the API at all. `useOrganizationList` lists every organization the
-  user belongs to, by name (new `client.listOrganizations()`,
-  `GET /v1/me/organizations`), and `<OrganizationSwitcher/>` shows the names;
-  it showed one bare id. A failed switch is shown in the switcher instead of
-  rejecting unhandled. Needs the API release where the hosted-login cookie
-  reaches those three reads.
-- **Breaking:** `<CreateOrganization/>` requires `onCreate(name)` and awaits
-  it, showing its error in the form; it no longer dispatches the
-  `qeetid:create-organization` DOM event. Creating an organization needs the
-  user's access token, so the app's server does it.
-- `client.verifyMfa` returns `{ recoveryCodes }`, `client.signUp` a
-  `SignUpResult` and `client.magicLink.consume` a `SignInResult` instead of
-  `void`; callers that ignore the result are unaffected. A magic link for an
-  account that holds a second factor, or must have one, now answers a
-  `needs_mfa` challenge rather than signing in.
+- **Breaking:** React **18.3** or 19 is required (was 18.0), and `react` is the only peer dependency;
+  `react-dom` is no longer one.
+- **Breaking:** Node.js **22.12** or later to build and server-render (was 22).
+- **Breaking:** `useSession` returns the session's state and actions (it listed and revoked the
+  person's sessions). `useUser` returns `{ isLoaded, user }` from the session (it fetched the profile
+  from Qeet ID). `useOrganization` returns the session's organisation, roles and permissions (it
+  fetched the active tenant).
+- **Breaking:** `<SignInButton>`, `<SignUpButton>` and `<SignOutButton>` go to the app's own
+  `{basePath}/sign-in`, `/sign-up` and `POST /sign-out` (they went to `loginUrl`, `signUpUrl` and
+  `logoutUrl`, or called the API). They take `returnTo` (and `organization` and `loginHint` for sign-in
+  and sign-up), and give the click to the app's own button as the single child.
+- **Breaking:** `<OrganizationSwitcher>` is a menu button that switches through the app's server and
+  takes the list of organisations as `organizations` (it fetched them from Qeet ID).
+- **Breaking:** `<UserButton>` takes `showName`, `menuItems` and `signOutReturnTo`; its menu no longer
+  links to an embedded profile.
+- **Breaking:** errors are one `QeetIDError` with `code` and `status` (was `AuthenticationError` and
+  `WebAuthnError`).
+- **Breaking:** the session's user has `id`, `email`, `emailVerified`, `name` and `picture`, from the
+  OpenID Connect claims (was `QeetIDUser` with `displayName`, `avatarUrl`, `phone`, `status`, …).
+- Built with tsdown and TypeScript 7 (was Vite library mode with API Extractor on TypeScript 6);
+  `publint` and Are the Types Wrong are part of `bun run verify`.
+- Every rendering test also runs on React 18.3; accessibility is checked with axe.
+- The release workflow runs only by hand on `main` (patch, minor or major); merging into `main` never
+  publishes by itself.
+
+### Removed
+
+- **Breaking:** the embedded flows and every direct call from the browser to Qeet ID:
+  `<SignIn/>`, `<SignUp/>`, `<UserProfile/>`, `<OrganizationProfile/>`, `<CreateOrganization/>`,
+  `<MfaEnrollmentPanel>`, `<SessionStatus>`; `useAuth`, `useSignIn`, `useSignUp`, `useSignOut`,
+  `useMFA`, `usePasskeys`, `usePasskeyAutofill`, `useOrganizationList`; `QeetIDClient`,
+  `useQeetIDClient`, `useQeetIDState`, `usePaths`, `useAppearance` and `isWebAuthnSupported`. Sign-in,
+  sign-up, MFA, passkeys and account management happen on Qeet ID's hosted pages.
+- **Breaking:** the two provider modes and their props (`apiUrl`, `loginUrl`, `logoutUrl`,
+  `signUpUrl`, `initialState`, `appearance`); use `basePath` and `initialSession`.
+- **Breaking:** `<RequireAuth>` (use `<Protect>`), `<Loading>`, `<Spinner>` and `<ErrorBoundary>`
+  (use the app's own).
+- **Breaking:** the appearance system (`Appearance`, `--qeetid-*` variables); use `className`,
+  `classNames`, `unstyled` and `@qeet-id/react/styles.css` with `--qeet-id-*` properties.
+- **Breaking:** the cookie and CSRF helpers and utilities: `CSRF_COOKIE_NAME`, `CSRF_HEADER_NAME`,
+  `DEFAULT_LOGIN_URL`, `DEFAULT_LOGOUT_URL`, `DEFAULT_SIGNUP_URL`, `readCookie`,
+  `getStoredPreference`, `setStoredPreference`, `describeSession`, `getQueryToken`, `isValidEmail`,
+  `isValidPassword`, `MIN_PASSWORD_LENGTH`, `base64UrlDecode`, `base64UrlEncode`. The CSRF header is
+  `CSRF_HEADER` in `@qeet-id/react/contract`.
+- **Breaking:** the types of the removed flows (`SignInResult`, `SignUpResult`, `MfaChallenge`,
+  `MfaEnrollment`, `Passkey`, `Branding`, `LoginContext`, the `*Params` and `*Status` types, …).
+
+### Security
+
+- The browser holds no token and calls nothing but the app's own routes (RFC 10017 §6.1).
+- Every request carries the CSRF header; sign-out and switching are POST only.
+- Return paths are same-origin only, and only `http(s)` URLs or paths are ever navigated to.
+- No inline styles, scripts or `eval`, so a strict Content-Security-Policy needs no exception.
+- Avatars load with `referrerPolicy="no-referrer"`.
 
 ## [0.1.0] — 2026-07-10
 
@@ -118,7 +165,6 @@ early drafts were deliberately **not** built —
 `RequirePermission`/`RequireRole`, and `useUsers`/`useOrganizations`
 (plural, admin-listing) — because the real backend has no
 session-authenticated endpoint to back them; see
-[docs/design-decisions/ADR-0002](docs/design-decisions/ADR-0002-no-fictional-endpoints.md)
-and [docs/FUTURE.md](docs/FUTURE.md).
+the ADR of that time (since replaced) and docs/FUTURE.md.
 
 [0.1.0]: https://github.com/qeetgroup/qeet-id-react/releases/tag/v0.1.0
