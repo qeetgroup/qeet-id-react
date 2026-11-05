@@ -5,33 +5,33 @@ architecture.
 
 ## Repository
 
-`@qeet-id/react` — React hooks, components and prebuilt widgets for Qeet ID. **A browser client, not a management SDK**: cookie + CSRF, never an API key, and it never sees a token.
-
-Context: **L0** `qeet-context` (organization) → **L1** `qeet-id-context` (product) → **L2** this
-repository → source.
+`@qeet-id/react` — the React SDK for Qeet ID, for the browser. React 18.3 or 19, bun, Biome,
+TypeScript 7, **zero runtime dependencies**, ES module and CommonJS builds via tsdown. It owns the
+session contract (`src/contract.ts`) that the Next.js and TanStack Start SDKs implement.
 
 ## Structure
 
-`src/{client,hooks,components,widgets,errors,constants,types,utils}/`. 10 hooks, 11 components, 6 widgets. Two provider modes — **redirect** (no `apiUrl`) and **embedded** (`apiUrl` set). One component per file named after its export (ADR-0003). `"use client"` on every hook and JSX file.
+`src/contract.ts` (the contract, no React) · `src/core/` (store, transport, navigation, tabs, access) ·
+`src/provider/` (provider, context, strings) · `src/hooks/` · `src/components/` (+ `internal/`) ·
+`src/testing/` · `src/styles.css` · `src/index.ts` (every export).
 
 ## Rules
 
-1. **Never read, write or store the session token.** It is an HttpOnly cookie. `src/utils/storage.ts` is preferences only.
-2. **Never add an `Authorization: ApiKey` path.** A browser must not hold a server credential.
-3. **Never wrap a fictional endpoint** (ADR-0002). There are deliberately no `usePermission`/`useRole`/`useUsers` hooks — the backend has no session-authenticated endpoint for them.
-4. **Redirect mode must keep working without `apiUrl`** (ADR-0001); `useAuth`/`useUser`/`<SignedIn>`/`<SignedOut>` work in both modes.
-5. **Never weaken CSRF.** Mutations echo `qe_csrf` as `X-CSRF-Token`; names must match `qeet-id-server` and `qeet-id-login`.
-6. This SDK maps wire fields to **camelCase** — `qeet-id-node`'s ADR-0004 deliberately does the opposite. Do not harmonise them.
+1. **Never call Qeet ID and never hold a token**; only the app's own `{basePath}/*` routes.
+2. **No invented session fields**; the contract is shared with the server SDKs.
+3. **Keep `X-Qeet-ID-Request`, POST for changes, `safeReturnTo`, http(s)-only navigation, no inline styles.**
+4. **`"use client"` only on modules that use hooks or context.**
+5. **No module-level session state; no React 19-only API.**
 
 ## Commands
 
-`pnpm install` · `pnpm check` · `pnpm build` · `pnpm test` · `pnpm typecheck` · `pnpm lint`
+`bun install` · `bun run verify` · `bun run build` · `bun run test` · `bun run typecheck` · `bun run check`
 
 ## Do not
 
-- store a token or any credential in localStorage/sessionStorage
-- add an API-key or bearer header to the browser client
-- add a hook for an endpoint that does not exist in `qeet-id-server`
-- omit `"use client"` on a hook or JSX file
-- hardcode colours — style through `appearance` and `--qeetid-*` variables
-- add a runtime dependency
+- add `getToken()`, an `Authorization` header, or any storage of a credential
+- call `api.id.qeet.in` or any Qeet ID endpoint from the browser
+- add retries, backoff, pagination or management calls
+- write an inline `style` or inject a `<style>` element
+- add a runtime dependency or a design-system dependency
+- invent scripts — read `package.json`

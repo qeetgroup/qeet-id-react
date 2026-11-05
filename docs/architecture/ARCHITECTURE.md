@@ -1,81 +1,65 @@
 # Architecture
 
-## Two layers: a cookie-based browser client, and React on top
+`@qeet-id/react` is the browser half of a backend-for-frontend integration (ADR-0001). It renders the
+session the app's server reports and sends people to the server's routes; it never calls Qeet ID and
+never holds a token.
 
-`@qeet-id/react` is two things bundled as one package:
+```mermaid
+flowchart LR
+    subgraph browser["🌐 Browser"]
+        UI["Components and hooks"] --> Store["SessionStore<br/>(one per provider)"]
+        Store <-->|"BroadcastChannel"| Tabs["Other tabs"]
+    end
+    Store -->|"GET /auth/session<br/>POST /auth/sign-out · /auth/switch-organization<br/>X-Qeet-ID-Request: 1"| Server["App server<br/>@qeet-id/nextjs · @qeet-id/tanstack"]
+    UI -->|"page navigation<br/>/auth/sign-in · /auth/sign-up"| Server
+    Server -->|"OIDC code + PKCE, tokens in an<br/>HttpOnly encrypted cookie"| QeetID["☁️ Qeet ID"]
+```
 
-1. **`src/client/`** — a framework-agnostic, cookie-based browser HTTP
-   client (`QeetIDClient`) plus the React context/provider that exposes it.
-   Unlike the sibling `@qeet-id/node` (bearer/ApiKey auth, holds a secret),
-   this client never holds a secret — the backend sets an HttpOnly SSO
-   cookie, and every request uses `credentials: "include"`. Mutations echo
-   a CSRF double-submit token the backend seeds on any GET.
-2. **`src/hooks/`, `src/components/`, `src/widgets/`** — the actual React
-   surface built on top of `src/client/`'s context: hooks for headless
-   integrations, small trigger components (`SignInButton`, `UserButton`)
-   for redirect-to-hosted-login integrations, and full embedded forms
-   (`<SignIn/>`, `<SignUp/>`, `<UserProfile/>`, ...) for apps that want
-   Qeet ID's auth UI inline rather than a redirect.
+## Layers
 
-## Two provider modes
+```text
+src/index.ts                 the public entry; no "use client" (re-exports only)
+src/contract.ts              the session contract: types, routes, safeReturnTo, parseSession (no React)
+src/errors.ts, version.ts    QeetIDError, VERSION (no React)
 
-`<QeetIDProvider>` supports two distinct integration styles, switched by
-whether `apiUrl` is passed:
+src/core/                    framework-free
+  store.ts                   SessionStore: state, checks, actions, listeners, expiry timer
+  transport.ts               fetch to the session routes; contract validation; QeetIDError mapping
+  navigation.ts              return paths, sign-in URLs, the only-http(s) navigation
+  tabs.ts                    the BroadcastChannel wrapper
+  access.ts                  hasAccess: roles and permissions as display hints
+  development.ts             isDevelopment, warnOnce
 
-- **Redirect mode** (no `apiUrl`): `useAuth`/`useUser` read
-  server-computed `initialState`; `<SignInButton>`/`<SignUpButton>`/
-  `<SignOutButton>` just navigate the browser to `loginUrl`/`signUpUrl`/
-  `logoutUrl` (defaults to `/api/auth/*`, meant to be backed by
-  `@qeet-id/nextjs`'s hosted-login handlers or an equivalent on another
-  framework). No `QeetIDClient` is constructed; `useQeetIDClient()` returns
-  `null`.
-- **Embedded mode** (`apiUrl` set): a `QeetIDClient` is constructed and
-  every flow/data-fetching hook (`useSignIn`, `useSession`, `usePasskeys`,
-  ...) and every embedded form component drives authentication directly
-  against the API — no redirect. Every such hook/component throws a clear
-  `"... requires apiUrl on <QeetIDProvider>"` error if called without it,
-  rather than silently no-op'ing.
+src/provider/                "use client" where React is used
+  QeetIDProvider.tsx         creates the store, starts it, hydrates newer server renders
+  context.ts                 the shared context (one per React copy, across ESM and CJS)
+  localization.ts            the strings and {placeholder} formatting (no React)
 
-Both modes share the same `useAuth`/`useUser`/`SignedIn`/`SignedOut` — those
-only ever read state, so they work identically either way.
+src/hooks/                   useSession, useUser, useOrganization, useQeetID, useStoreState
+src/components/              SignedIn, SignedOut, Protect, Sign{In,Up,Out}Button, UserButton, OrganizationSwitcher
+  internal/                  Trigger (single-child button), useMenuButton (APG), Avatar, icons, classNames
+src/testing/                 QeetIDTestProvider, createTestSession (entry: src/testing.ts)
+src/styles.css               the optional stylesheet, copied to dist as is
+```
 
-## Why hooks never throw past their own boundary
+## Data flow
 
-Every flow hook (`useSignIn`, `useSignUp`, `useMFA`, `useSignOut`) catches
-every failure internally and converts it to `{step: "error", error: string}`
-on its `status` return value — it never lets an exception propagate to the
-caller. This is deliberate: the whole point of the status union is that a
-component (prebuilt or your own) renders UI *from* `status`, not from a
-`try`/`catch` around the hook call. Data-fetching hooks (`useSession`,
-`usePasskeys`) are the exception — their *mutations* (`revoke`, `register`,
-`remove`) do throw on failure (there's no multi-step "flow" to render
-statuses for; a caller wraps the specific button's `onClick` in its own
-error handling if it wants to).
+1. `<QeetIDProvider>` creates a `SessionStore` in `useState` (no side effects) with the routes under
+   `basePath`, the `fetch` transport and `initialSession`.
+2. Its effect calls `store.start()`: listeners for focus, `online` and other tabs, the callback's
+   `authError`, the first check when the session isn't known, and the expiry timer. Cleanup calls
+   `stop()`.
+3. Hooks read the store with `useSyncExternalStore`, each selecting its part.
+4. Actions go through the store: `signIn`/`signUp` navigate; `signOut` and `switchOrganization` post,
+   update the state, tell other tabs, call the callbacks and (sign-out) navigate to `redirectTo`.
 
-## The appearance system
+## State
 
-Every embedded form component accepts an `appearance` prop
-(`{theme, variables, elements}`), merged with `<QeetIDProvider appearance=...>`'s
-provider-level default. `variables` map to `--qeetid-*` CSS custom
-properties (`applyAppearance` in `src/widgets/utils.ts`); every inline
-style in an embedded component reads `var(--qeetid-color-primary, #F26D0E)`
-— falling back to Qeet's brand orange when no override is set. `elements`
-supplies a `className` per named slot (`card`, `formInput`,
-`buttonPrimary`, ...), merged onto the internal element so a consumer's own
-CSS (Tailwind, CSS Modules, whatever) can restyle without needing a full
-custom implementation.
+| Status | Means | `<SignedIn>` | `<SignedOut>` | `<Protect>` |
+| :-- | :-- | :-- | :-- | :-- |
+| `loading` | the first check is on its way | nothing | nothing | `loading` |
+| `signed-in` | the server reported a session | children | nothing | children or `fallback` |
+| `signed-out` | the server reported none | nothing | children | `fallback`, or a redirect |
+| `unavailable` | the first check failed | nothing | nothing | `loading` |
 
-## No session token ever touches this code
-
-The session is an HttpOnly cookie — by design, invisible to JavaScript, so
-no XSS payload running in the page can steal it. This package correspondingly
-never reads or stores it; `src/utils/storage.ts` exists only for
-non-sensitive UI preferences, never a credential.
-
-## See also
-
-[docs/design-decisions/](../design-decisions/) for the trade-offs behind
-splitting the reference implementation's single `context.tsx`/`components.tsx`
-into this package's category-folder layout, and for exactly which
-hooks/components were deliberately left out because the real backend has
-no endpoint to back them — see also [docs/FUTURE.md](../FUTURE.md).
+`error`, `endReason` and `pendingAction` complete the snapshot (`src/core/store.ts`).

@@ -3,7 +3,7 @@
 
 schema_version: 1
 
-context: {type: repository, level: L2, canonical: true, last_verified: "2026-08-28"}
+context: {type: repository, level: L2, canonical: true, last_verified: "2026-11-05"}
 
 inheritance:
   organization: {repository: qeetgroup/qeet-context, level: L0}
@@ -14,55 +14,62 @@ repository:
   product: qeet-id
   type: sdk
   role: sdk
-  status: development        # v0.1.0 — NOT PUBLISHED: npm returns 404
+  status: development        # not yet published to npm
   visibility: public
   default_branch: main
+  branches: {work: develop, release: main}   # main only by a pull request from develop; versions are tags
 
 runtime:
   language: TypeScript
-  node: ">=18.17"
-  package_manager: pnpm@10.32.1
-  peer: {react: "^18.0.0 || ^19.0.0", react-dom: "^18.0.0 || ^19.0.0"}
+  typescript: "7"
+  node: ">=22.12.0"          # building and server rendering; tested on 22, 24 and 26; .nvmrc pins 24
+  package_manager: bun@1.4.3
+  lint_format: biome
+  peer: {react: "^18.3.0 || ^19.0.0"}
   runtime_deps: none
-  build: vite-lib-mode       # + vite-plugin-dts (rollupTypes)
+  build: tsdown              # ES module (.mjs/.d.mts) + CommonJS (.cjs/.d.cts), one file per module
 
 module: {name: "@qeet-id/react", version: "0.1.0"}
 
+entries:
+  ".":            provider, hooks, components, QeetIDError, VERSION, types   # "use client" per module
+  "./contract":   the session contract: types, routes, safeReturnTo, parseSession   # no React
+  "./testing":    QeetIDTestProvider, createTestSession
+  "./styles.css": optional stylesheet, never imported by the code
+
 architecture:
-  style: browser-client       # NOT a management SDK
-  modes: [redirect, embedded] # ADR-0001 — apiUrl absent vs present
-  surface: {hooks: 10, components: 11, widgets: 6}
-  layout: [src/client, src/hooks, src/components, src/widgets, src/errors, src/constants, src/types, src/utils]
+  model: hosted-login + backend-for-frontend   # ADR-0001 — the browser never holds a token
+  contract: docs/session-contract.md           # ADR-0002 — implemented by qeet-id-nextjs, qeet-id-tanstack
+  styling: no-design-system-dependency         # ADR-0003 — single-child buttons, optional stylesheet
+  packaging: dual-esm-cjs, use-client-per-module   # ADR-0004
+  state: per-provider store + useSyncExternalStore # ADR-0005
+  layout: [src/core, src/provider, src/hooks, src/components, src/testing]
 
 contracts:
-  consumes: {api: qeet-id-server}
-  base_url: none              # apiUrl is REQUIRED — there is no default
-  auth_scheme: cookie + CSRF double-submit
-  csrf: {cookie: qe_csrf, header: X-CSRF-Token, seed: "GET /healthz"}
-  session_cookie: qe_ls       # HttpOnly — this SDK can never read it
-
-deliberate_gaps:              # ADR-0002 — the backend has no endpoint for these
-  - no usePermission / useRole hooks
-  - no useUsers / useOrganizations admin listings
-  - no AuthorizationError
-absent_by_design: [retry, timeout, logger, pagination, JWKS verification, webhook verification]
+  provides:
+    session_contract: {base_path: /auth, routes: [sign-in, sign-up, callback, session, sign-out, switch-organization]}
+    csrf_header: "X-Qeet-ID-Request: 1"
+  consumes: {api: "the app's own session routes only"}
+  qeet_id_facts_from: qeet-id-server fix/server-release-1.0 (ID token, userinfo, management API)
 
 commands:
-  install: pnpm install
-  check:   pnpm check         # typecheck + lint + test
-  build:   pnpm build
-  test:    pnpm test
+  install: bun install
+  check:   bun run verify    # React 18 test install + typecheck + biome + test + build + publint + attw — the gate
+  build:   bun run build
+  test:    bun run test      # React 19 and React 18.3 projects
 
 ci:
-  workflows: [ci.yml, codeql.yml, lint.yml, release.yml, security.yml]
-  note: ci.yml DOES run lint here (qeet-id-node's does not)
+  workflows: [ci.yml, codeql.yml, lint.yml, release.yml, rollback.yml, security.yml, version.yml]
+  matrix: ["22", "24", "26"]
+  release: PR into main -> version.yml bumps the package.json patch; push main -> version not on npm -> gate -> npm publish --provenance -> tag vX.Y.Z + GitHub release
 
 security:
   sensitive_paths:
-    - src/client/webauthn.ts  # WebAuthn ceremonies
-    - src/client/http.ts      # CSRF double-submit handling
-  never_touches_token: true   # session is HttpOnly; storage.ts is prefs only
-  never: [store a token, add an API key path, weaken CSRF]
+    - src/contract.ts          # safeReturnTo, the CSRF header name
+    - src/core/transport.ts    # the only network code
+    - src/core/navigation.ts   # http(s)-only navigation
+  never_touches_token: true
+  never: [call Qeet ID from the browser, hold or store a token, drop the CSRF header, redirect off-origin, inject inline styles]
 
 llm_context:
   primary_instructions: AGENTS.md
@@ -70,4 +77,5 @@ llm_context:
   boundaries: docs/llm/boundaries.md
   workflows: docs/llm/workflows.md
   architecture_map: docs/llm/architecture-map.md
+  practices: docs/engineering-practices.md
   adapters: [CLAUDE.md, GEMINI.md, .github/copilot-instructions.md]

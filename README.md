@@ -1,318 +1,386 @@
-# qeet-id-react
+<div align="center">
 
-[![React Version](https://img.shields.io/badge/react-18%20%7C%2019-61DAFB?logo=react)](package.json)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+# ⚛️ Qeet ID for React
 
-React hooks and prebuilt components for [Qeet ID](https://qeet.in) — the passkeys-first identity platform. One provider, headless hooks for full control (`useAuth`, `useUser`, `useSignIn`, `usePasskeys`, ...), and prebuilt drop-in UI for when you don't want to build your own (`<SignInButton/>`, `<UserButton/>`, `<SignIn/>`, `<UserProfile/>`) — cookie-based, WebAuthn/passkeys built in, zero third-party runtime dependencies beyond React itself.
+**Sign people in on Qeet ID's hosted pages and show the session your own server keeps: a provider, hooks and accessible components for any React app.**
 
-```tsx
-import { QeetIDProvider, SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@qeet-id/react";
+[![React](https://img.shields.io/badge/React-18.3%20%7C%2019-61DAFB?logo=react&logoColor=black)](#-install)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](#-typescript-and-modules)
+[![Server Components](https://img.shields.io/badge/Server%20Components-ready-000000?logo=nextdotjs&logoColor=white)](#-server-rendering-and-server-components)
+[![ESM + CJS](https://img.shields.io/badge/modules-ESM%20%2B%20CJS-F7DF1E)](#-typescript-and-modules)
+[![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-2EA043)](package.json)
+[![Tests](https://img.shields.io/badge/tests-368%20passing-2EA043)](test)
 
-function App() {
-  return (
-    <QeetIDProvider loginUrl="/api/auth/login" logoutUrl="/api/auth/logout">
-      <SignedIn><Dashboard /></SignedIn>
-      <SignedOut><SignInButton /></SignedOut>
-    </QeetIDProvider>
-  );
-}
-```
+[📜 Session contract](docs/session-contract.md) · [🚀 Quick start](#-quick-start) · [🧩 Components](#-components) · [📝 Changelog](CHANGELOG.md) · [🏗️ Architecture](docs/architecture/ARCHITECTURE.md)
 
-New to Qeet ID? Read [Concepts](#concepts) first — this SDK is the browser-side half of the story; the server-side half (managing users, roles, verifying sessions) is [`@qeet-id/node`](https://github.com/qeetgroup/qeet-id-node).
+</div>
 
----
+> [!IMPORTANT]
+> The browser never holds a token and never calls Qeet ID. People sign in on Qeet ID's hosted pages;
+> your server keeps the tokens in an encrypted, HttpOnly cookie and answers a few routes under `/auth`.
+> [`@qeet-id/nextjs`](https://github.com/qeetgroup/qeet-id-nextjs) and
+> [`@qeet-id/tanstack`](https://github.com/qeetgroup/qeet-id-tanstack) provide those routes; any other
+> server can, by following the [session contract](docs/session-contract.md).
 
-## Table of contents
+## 📦 What's inside
 
-- [Concepts](#concepts)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [Two provider modes: redirect vs. embedded](#two-provider-modes-redirect-vs-embedded)
-- [Resource reference](#resource-reference)
-- [Core concepts, in code](#core-concepts-in-code)
-  - [Headless hooks](#headless-hooks)
-  - [Prebuilt components](#prebuilt-components)
-  - [Passkeys / WebAuthn](#passkeys--webauthn)
-  - [Appearance / theming](#appearance--theming)
-  - [Server-side hydration (SSR)](#server-side-hydration-ssr)
-- [Architecture](#architecture)
-- [Examples](#examples)
-- [Documentation](#documentation)
-- [FAQ](#faq)
-- [Versioning and compatibility](#versioning-and-compatibility)
-- [Contributing](#contributing)
-- [Security](#security)
-- [Support](#support)
-- [License](#license)
+| | |
+|:--|:--|
+| 🔐 **No tokens in the browser** | The backend-for-frontend pattern of RFC 10017: the session is read from your own `/auth/session`, every request carries a CSRF header, and return paths stay on your site |
+| 🪝 **Hooks** | `useSession`, `useUser`, `useOrganization`, `useQeetID`, each re-rendering only when its own part of the session changes |
+| 🧩 **Components** | `SignedIn` · `SignedOut` · `Protect` · `SignInButton` · `SignUpButton` · `SignOutButton` · `UserButton` · `OrganizationSwitcher` |
+| 🔄 **Always current** | Checks again on focus, on reconnection and at expiry; signing out in one tab signs out every tab; tells you why a session ended |
+| 🖥️ **Server rendering** | `initialSession` renders the right UI on the server with no flicker and no hydration mismatch; `"use client"` sits exactly where it's needed |
+| 🏢 **B2B ready** | The active organisation, the person's roles and permissions in it, and switching between organisations |
+| ♿ **Accessible** | WAI-ARIA menu buttons with full keyboard support, live status, right-to-left layouts, every string localisable, checked with axe |
+| 🎨 **Your design system** | Wraps your own button; an optional stylesheet that matches Qeetrix by itself; no inline styles, so a strict CSP just works |
+| 🧪 **Testable** | `@qeet-id/react/testing` renders your components with any session, no server needed |
+| 🪶 **Lean** | React is the only peer; no runtime dependencies; ES module and CommonJS, one file per module for tree shaking |
 
-## Concepts
-
-| Term | What it means here |
-|---|---|
-| **Redirect mode** | `<QeetIDProvider>` with no `apiUrl` — `<SignInButton>` etc. navigate the whole browser to your own hosted-login routes. Simplest integration; you don't build a sign-in page at all. |
-| **Embedded mode** | `<QeetIDProvider apiUrl="...">` — hooks and prebuilt forms (`<SignIn/>`, `<SignUp/>`) drive authentication directly against the API, no redirect. You render the auth UI inline in your own app. |
-| **Session cookie** | Qeet ID sets an HttpOnly cookie on sign-in — invisible to JavaScript by design, so this SDK never reads or stores it. Every request just uses `credentials: "include"`. |
-| **CSRF token** | A second, JS-readable cookie the backend issues; this SDK echoes it as a header on every mutating request automatically — you never handle it yourself. |
-| **Passkey / WebAuthn** | A passwordless credential backed by your device's authenticator (Face ID, Windows Hello, a hardware key). `usePasskeys`/`<UserProfile/>` handle the ceremony via the browser's native WebAuthn API. |
-
-## Requirements
-
-- **Node.js 18.17+** for tooling; **React 18 or 19** as a peer dependency (not bundled).
-- A Qeet ID account and, for redirect mode, your own hosted-login routes (or [`@qeet-id/nextjs`](https://github.com/qeetgroup/qeet-id-nextjs), which provides them).
-
-## Installation
-
-```bash
-npm install @qeet-id/react
-# or: pnpm add @qeet-id/react / yarn add @qeet-id/react
-```
-
-## Quick start
-
-```tsx
-// app.tsx — redirect mode: no apiUrl, points at your own hosted-login routes.
-import { QeetIDProvider, SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@qeet-id/react";
-
-export default function App() {
-  return (
-    <QeetIDProvider loginUrl="/api/auth/login" logoutUrl="/api/auth/logout" signUpUrl="/api/auth/sign-up">
-      <header>
-        <UserButton />
-      </header>
-      <SignedIn>
-        <Dashboard />
-      </SignedIn>
-      <SignedOut>
-        <SignInButton>Sign in to continue</SignInButton>
-      </SignedOut>
-    </QeetIDProvider>
-  );
-}
-
-function Dashboard() {
-  const { user } = useUser();
-  return <p>Welcome back, {user?.displayName ?? user?.email}.</p>;
-}
-```
-
-## Two provider modes: redirect vs. embedded
-
-| | Redirect mode | Embedded mode |
-|---|---|---|
-| `<QeetIDProvider>` prop | no `apiUrl` | `apiUrl="https://api.id.qeet.in"` |
-| `<SignInButton>`/`<SignUpButton>`/`<SignOutButton>` | Navigate to `loginUrl`/`signUpUrl`/`logoutUrl` | Same — these always just navigate |
-| `<SignIn/>`/`<SignUp/>` widget forms | Not usable (no client to drive them) | Drive auth directly against the API, no redirect |
-| `useSignIn`/`useSignUp`/`usePasskeys`/`useSession` | Throw `"requires apiUrl on <QeetIDProvider>"` | Work normally |
-| `useAuth`/`useUser`/`<SignedIn>`/`<SignedOut>` | Read `initialState` (compute it server-side) | Same — these never need `apiUrl` |
-
-Pick redirect mode if you already have (or are fine building) a hosted login page. Pick embedded mode if you want Qeet ID's auth UI to render inline in your app, no full-page navigation.
-
-## Resource reference
-
-<details open>
-<summary><strong>Hooks — authentication</strong></summary>
-
-| Hook | Does |
-|---|---|
-| `useAuth` | Session identity (`isAuthenticated`, `userId`, `tenantId`) — no profile fetch |
-| `useSession` | List/revoke the current user's active sessions |
-| `useSignIn` | Email/password sign-in with an MFA step |
-| `useSignUp` | New-account registration |
-| `useSignOut` | Clears the session in embedded mode |
-| `usePasskeys` | List/register/remove WebAuthn passkeys |
-| `useMFA` | Standalone step-up MFA verification (outside the sign-in flow) |
-
-</details>
-
-<details open>
-<summary><strong>Hooks — identity</strong></summary>
-
-| Hook | Does |
-|---|---|
-| `useUser` | The signed-in user's profile |
-| `useOrganization` | The active organization (tenant) + `setActive` to switch |
-| `useOrganizationList` | The current user's own tenant membership |
-
-</details>
-
-<details open>
-<summary><strong>Components</strong></summary>
-
-| Component | Renders |
-|---|---|
-| `<SignedIn>`/`<SignedOut>` | Conditional children based on auth state |
-| `<SignInButton>`/`<SignUpButton>`/`<SignOutButton>` | Unstyled redirect triggers |
-| `<UserButton>` | Avatar trigger + dropdown (name, email, sign out) |
-| `<SessionStatus>` | List of active sessions with a revoke action |
-| `<RequireAuth>` | Renders `children` if signed in, else `fallback` |
-| `<Loading>`/`<Spinner>`/`<ErrorBoundary>` | Small framework-agnostic UI primitives |
-
-</details>
-
-<details open>
-<summary><strong>Widgets</strong> (full inline UI, not just triggers)</summary>
-
-| Component | Renders |
-|---|---|
-| `<SignIn/>` | Full email/password (+ MFA step) sign-in form |
-| `<SignUp/>` | Full registration form |
-| `<UserProfile/>` | Profile + passkeys + active-sessions management panel |
-| `<OrganizationSwitcher/>` | Dropdown to switch active tenant |
-| `<OrganizationProfile/>` | Read-only active-organization display |
-| `<CreateOrganization/>` | New-organization form shell (see [FAQ](#faq)) |
-
-</details>
-
-## Core concepts, in code
-
-### Headless hooks
-
-Every hook works with or without the prebuilt components — build your own UI entirely from these if you want full control:
-
-```tsx
-function CustomSignIn() {
-  const { status, signIn } = useSignIn();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); signIn({ email, password }); }}>
-      <input value={email} onChange={(e) => setEmail(e.target.value)} />
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <button disabled={status.step === "loading"}>Sign in</button>
-      {status.step === "error" && <p>{status.error}</p>}
-    </form>
-  );
-}
-```
-
-Flow hooks (`useSignIn`, `useSignUp`, `useMFA`, `useSignOut`) never throw past their own boundary — every failure is caught into `status.error`, so you render from `status`, not `try`/`catch`.
-
-### Prebuilt components
-
-For teams that don't want to build a sign-in form or account menu from scratch:
-
-```tsx
-<SignInButton className="btn-primary">Sign in</SignInButton>
-<UserButton menuItems={<a href="/billing">Billing</a>} />
-<SignIn onSuccess={() => router.push("/dashboard")} onSignUp={() => router.push("/sign-up")} />
-```
-
-None of these are required — see [ADR-0002](docs/design-decisions/) if you're deciding whether to use them or build your own from the hooks.
-
-### Passkeys / WebAuthn
-
-```tsx
-function PasskeySettings() {
-  const { passkeys, register, remove } = usePasskeys();
-  return (
-    <>
-      <button onClick={register}>Add a passkey</button>
-      <ul>
-        {passkeys.map((pk) => (
-          <li key={pk.id}>
-            {pk.name ?? pk.id} <button onClick={() => remove(pk.id)}>Remove</button>
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
-```
-
-`isWebAuthnSupported()` is available to hide passkey UI entirely on browsers that can't perform the ceremony.
-
-### Appearance / theming
-
-Every widget accepts an `appearance` prop (also settable once on `<QeetIDProvider appearance={...}>`):
-
-```tsx
-<QeetIDProvider
-  apiUrl="https://api.id.qeet.in"
-  appearance={{
-    variables: { colorPrimary: "#6366f1", borderRadius: "12px" },
-    elements: { buttonPrimary: "my-app-button", card: "my-app-card" },
-  }}
->
-  <App />
-</QeetIDProvider>
-```
-
-`variables` map to `--qeetid-*` CSS custom properties; `elements` supply a `className` per named slot, merged onto the internal markup — restyle without forking the component.
-
-### Server-side hydration (SSR)
-
-Pass server-computed auth state so the client renders correctly on first paint, without waiting on a round trip:
-
-```tsx
-// e.g. a Next.js Server Component reading the session cookie server-side
-<QeetIDProvider initialState={{ isAuthenticated: true, userId, tenantId }}>
-  <App />
-</QeetIDProvider>
-```
-
-## Architecture
+## 🔗 How it fits
 
 ```mermaid
 flowchart LR
-    A[Your app] --> B["<QeetIDProvider>"]
-    B --> C["Hooks / Components / Widgets"]
-    C --> D["QeetIDClient<br/>cookie + CSRF aware"]
-    D --> E["fetch (credentials: include)"]
-    E --> F[Qeet ID API]
+    subgraph browser["🌐 Browser"]
+        App["Your React app<br/>@qeet-id/react"]
+    end
+    subgraph server["🖥️ Your server"]
+        Routes["/auth/*<br/>@qeet-id/nextjs · @qeet-id/tanstack"]
+    end
+    App -->|"GET /auth/session · POST /auth/sign-out<br/>X-Qeet-ID-Request: 1"| Routes
+    App -->|"page navigation: /auth/sign-in"| Routes
+    Routes -->|"OIDC code + PKCE"| QeetID["☁️ Qeet ID<br/>hosted sign-in, MFA, passkeys"]
+    Routes -.->|"tokens stay here, in an HttpOnly cookie"| Routes
 ```
 
-See [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) for the two-provider-mode design, the appearance system, and why the session token never touches this code; [docs/design-decisions/](docs/design-decisions/) for the ADRs behind the non-obvious calls.
+## 📥 Install
 
-## Examples
+React 18.3 or 19. Node.js 22.12 or later to build and server-render.
 
-Runnable example snippets live in [`examples/`](./examples):
+```sh
+npm install @qeet-id/react
+# or: bun add @qeet-id/react · pnpm add @qeet-id/react · yarn add @qeet-id/react
+```
 
-| Example | Demonstrates |
-|---|---|
-| [`vite`](./examples/vite) | Plain Vite SPA, redirect mode |
-| [`react-router`](./examples/react-router) | Embedded mode with a protected route via `<RequireAuth>` |
-| [`tanstack-router`](./examples/tanstack-router) | Same pattern on TanStack Router |
-| [`react19`](./examples/react19) | React 19's `useActionState` driving `useSignIn` |
-| [`electron`](./examples/electron) | Embedded mode inside an Electron renderer |
+## 🚀 Quick start
 
-## Documentation
+Wrap the app once, then show what fits the session:
 
-- [docs/architecture/ARCHITECTURE.md](./docs/architecture/ARCHITECTURE.md)
-- [docs/design-decisions/](./docs/design-decisions/) — ADRs, including why some hooks/components were deliberately **not** built
-- [docs/FUTURE.md](./docs/FUTURE.md) — capabilities other CIAM React SDKs have that Qeet ID's backend doesn't support yet
+```tsx
+import { QeetIDProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@qeet-id/react";
+import "@qeet-id/react/styles.css"; // optional
 
-## FAQ
+export function App() {
+  return (
+    <QeetIDProvider>
+      <header>
+        <SignedOut>
+          <SignInButton />
+        </SignedOut>
+        <SignedIn>
+          <UserButton showName menuItems={[{ label: "Your account", href: "/account" }]} />
+        </SignedIn>
+      </header>
+    </QeetIDProvider>
+  );
+}
+```
 
-**Why is there no `usePermission`/`useRole`?** The real backend has no session-authenticated "what can I do" endpoint — only the server-side management API (`@qeet-id/node`) can resolve RBAC. See [docs/FUTURE.md](docs/FUTURE.md).
+`<SignInButton>` sends the page to `/auth/sign-in?returnTo=<this page>`; your server continues to Qeet
+ID's hosted sign-in and brings the person back. The provider reads `GET /auth/session` and every
+component follows.
 
-**Why does `<CreateOrganization/>` not actually create anything?** Tenant creation is a management-API operation. The component renders a real form and dispatches a `qeetid:create-organization` event with the entered name — wire that up to your own backend endpoint (which calls `@qeet-id/node`'s `organizations.create`), rather than expecting this browser SDK to do it directly with no credential to do so safely.
+**Server-rendered apps** pass the session the server already has, so the first paint is right:
 
-**Do I need both `@qeet-id/react` and `@qeet-id/node`?** Usually yes — `@qeet-id/node` on your backend (holds the secret API key, verifies sessions, manages users/roles) and `@qeet-id/react` on your frontend (renders auth UI, drives sign-in). They're complementary, not overlapping.
+```tsx
+// app/layout.tsx — a Server Component
+import { QeetIDProvider } from "@qeet-id/react";
+import type { Session } from "@qeet-id/react/contract";
 
-**Can I use only the hooks and none of the prebuilt components?** Yes — nothing else in this package depends on `SignInButton.tsx`/`UserMenu.tsx`/the widget forms. Build your own UI entirely from `useAuth`, `useSignIn`, `usePasskeys`, etc.
+declare function getSession(): Promise<Session | null>; // from your server SDK
 
-**Does this SDK store my session token anywhere?** No — it's an HttpOnly cookie, invisible to JavaScript by design. This SDK never reads or writes it.
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
+  return (
+    <html lang="en-IN">
+      <body>
+        <QeetIDProvider initialSession={session}>{children}</QeetIDProvider>
+      </body>
+    </html>
+  );
+}
+```
 
-## Versioning and compatibility
+## ⚙️ The provider
 
-Follows [Semantic Versioning](https://semver.org/). Currently **pre-1.0** — see [CHANGELOG.md](./CHANGELOG.md). React 18 and 19 are both supported as peer dependencies.
+```tsx
+<QeetIDProvider
+  initialSession={session}
+  basePath="/auth"
+  localization={{ signIn: "Log in" }}
+  onSessionChange={(session, previous) => {
+    if (session?.organization?.id !== previous?.organization?.id) queryClient.clear();
+  }}
+  onSignOut={(reason) => reason === "expired" && toast("Your session expired. Sign in again.")}
+  onError={(error) => logger.warn(error.code, error.message)}
+>
+```
 
-## Contributing
+| Prop | Default | |
+|:--|:--|:--|
+| `initialSession` | none | The session the server rendered the page with (`Session` or `null`). Without it the provider asks `GET {basePath}/session` on load |
+| `basePath` | `/auth` | Where your server's session routes live; must match the server |
+| `refetchOnWindowFocus` | `true` | Check again when the tab regains focus (at most every 5 s) |
+| `refetchOnReconnect` | `true` | Check again when the browser comes back online |
+| `syncTabs` | `true` | Tell other tabs about a sign-out or a switch, and listen to theirs |
+| `localization` | English | Any of the component strings; `{name}` and `{organization}` are filled in |
+| `onSessionChange` | none | `(session, previousSession)` after the session changes; clear data caches here |
+| `onSignOut` | none | `(reason)` when a known session ends: `signed-out`, `expired` or `revoked` |
+| `onError` | none | `(error)` when a check or action fails, or the callback reported a failed sign-in |
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+## 🪝 Hooks
 
-## Security
+| Hook | Returns | Re-renders when |
+|:--|:--|:--|
+| `useSession()` | `status`, `isLoaded`, `isSignedIn`, `session`, `user`, `organization`, `error`, `endReason`, `pendingAction`, `has()`, and every action | anything changes |
+| `useUser()` | `{ isLoaded, user }` | the person changes |
+| `useOrganization()` | `{ isLoaded, organization, roles, permissions, has, switchOrganization, isSwitching }` | the organisation, roles or permissions change |
+| `useQeetID()` | `signIn`, `signUp`, `signOut`, `switchOrganization`, `refresh`, `routes` | never: the actions keep their identity |
 
-See [SECURITY.md](./SECURITY.md) — please don't open a public issue for security reports.
+```tsx
+import { useSession } from "@qeet-id/react";
 
-## Support
+function AccountStatus() {
+  const { status, user, endReason, refresh } = useSession();
+  if (status === "loading") return <Spinner label="Checking your session" />;
+  if (status === "unavailable") return <button type="button" onClick={() => refresh()}>Try again</button>;
+  if (status === "signed-out") return endReason === "expired" ? <p>Your session expired.</p> : null;
+  return <p>Signed in as {user?.name ?? user?.email}</p>;
+}
+```
 
-- **Bugs / feature requests:** [open an issue](https://github.com/qeetgroup/qeet-id-react/issues)
-- **Qeet ID platform questions:** [qeet.in](https://qeet.in)
-- **Security reports:** see [SECURITY.md](./SECURITY.md)
+The session has the shape of the [contract](docs/session-contract.md#the-session):
 
-## License
+```ts
+interface Session {
+  user: { id: string; email: string | null; emailVerified: boolean; name: string | null; picture: string | null };
+  organization: { id: string; name: string | null } | null;
+  roles: readonly string[];       // role names in the organisation, such as "Finance approver"
+  permissions: readonly string[]; // permission keys, such as "invoice.approve"
+  expiresAt: string;              // ISO 8601
+}
+```
 
-[MIT](./LICENSE)
+## 🧩 Components
+
+| Component | Does |
+|:--|:--|
+| `<SignedIn>` · `<SignedOut>` | Render their children only once the server has answered, signed in or signed out |
+| `<Protect>` | A guard for a page or a part of one: `role`, `permission`, `condition`, with `fallback`, `loading` and `redirectToSignIn` |
+| `<SignInButton>` · `<SignUpButton>` | Start signing in or up on Qeet ID's hosted pages, back to `returnTo` (this page by default) |
+| `<SignOutButton>` | Sign out here and in every tab, then follow the server through Qeet ID's sign-out |
+| `<UserButton>` | The avatar, opening a menu with the name, email, your own items and Sign out |
+| `<OrganizationSwitcher>` | The active organisation, opening a menu of the others to switch to |
+
+**Your own button.** A trigger renders a plain `<button>`, or gives the click to your design system's
+button when it is the single child. Its ref, class and handlers are kept, and `event.preventDefault()`
+in its own `onClick` cancels:
+
+```tsx
+<SignInButton returnTo="/invoices">
+  <Button variant="primary">Review invoices</Button>
+</SignInButton>
+
+<SignUpButton loginHint="meera@brightleaffoods.in">Create an account</SignUpButton>
+<SignOutButton returnTo="/goodbye" />
+```
+
+**Guards.** `<Protect>` works with any router, because sign-in is a server route:
+
+```tsx
+<Protect redirectToSignIn loading={<PageSkeleton />}>
+  <InvoicesPage />
+</Protect>
+
+<Protect permission="invoice.approve" fallback={<p>Ask a finance approver.</p>}>
+  <ApprovalQueue />
+</Protect>
+
+// Send signed-out people to a page of your own with your router's component:
+<Protect fallback={<Navigate to="/welcome" />}>{/* React Router, TanStack Router … */}</Protect>
+```
+
+**Organisations.** The app supplies the organisations to offer; Qeet ID doesn't give applications a
+person's list of organisations yet:
+
+```tsx
+<OrganizationSwitcher organizations={organizations} afterSwitchUrl="/dashboard" />
+```
+
+`afterSwitchUrl` loads a page after the switch, so no cached data of the old organisation survives.
+Without it the session changes in place and `onSessionChange` fires.
+
+## 🏢 Roles and permissions
+
+```tsx
+const { has } = useOrganization();
+
+{has({ permission: "invoice.approve" }) && <ApproveButton />}
+{has({ role: "Finance approver" }) && <QuarterEndReport />}
+```
+
+> [!WARNING]
+> Roles and permissions decide what the page **shows**, never what a person **may do**. The
+> component's code still reaches the browser; your server checks every request it answers.
+
+## 🔄 Session states
+
+| `status` | Means | `<SignedIn>` | `<SignedOut>` | `<Protect>` |
+|:--|:--|:--|:--|:--|
+| `loading` | the first check is on its way | — | — | `loading` |
+| `signed-in` | your server reported a session | ✅ | — | children or `fallback` |
+| `signed-out` | your server reported none | — | ✅ | `fallback`, or sign-in |
+| `unavailable` | the first check failed (`error` says why) | — | — | `loading` |
+
+A later failed check keeps the last known session and sets `error`. When a session ends,
+`endReason` says why: `signed-out` (here or in another tab), `expired` (it reached `expiresAt`) or
+`revoked` (it ended on the server first). `pendingAction` is `sign-out` or `switch-organization` while
+the server answers; the components show it with `aria-busy`.
+
+## 🎨 Styling
+
+Import the optional stylesheet once. Nothing loads it for you:
+
+```tsx
+import "@qeet-id/react/styles.css";
+```
+
+Every value is a custom property with layered fallbacks, `var(--qeet-id-…, var(--qx-…, <Qeet
+default>))`, so an app that loads Qeetrix's tokens matches Qeetrix without doing anything:
+
+```css
+:root {
+  --qeet-id-color-focus: #0b6bcb;
+  --qeet-id-radius-popover: 12px;
+  --qeet-id-font-family: "Inter", system-ui, sans-serif;
+}
+```
+
+| | |
+|:--|:--|
+| 🌗 **Dark mode** | Follows `prefers-color-scheme`; `data-theme="dark"` or `"light"` on any ancestor wins |
+| 🧱 **Cascade layer** | Everything is in `@layer qeet-id`, so your own rules win without specificity fights |
+| 🏷️ **Classes** | BEM: `qeet-id-user-button__trigger`, `qeet-id-organization-switcher__item`; `data-state="open"` |
+| ✂️ **Your own** | `className` on the root, `classNames={{ trigger, menu, item, … }}` per part, `unstyled` to drop the SDK's classes |
+| 🛡️ **CSP** | No inline styles and nothing injected: a strict `Content-Security-Policy` needs no exception |
+| ↔️ **Right to left** | Logical properties throughout |
+
+## 🌍 Localisation and accessibility
+
+Every string is on the provider:
+
+```tsx
+<QeetIDProvider
+  localization={{
+    signIn: "साइन इन करें",
+    signOut: "साइन आउट करें",
+    userButtonLabel: "{name} का खाता",
+    organizationSwitching: "{organization} पर जा रहे हैं…",
+  }}
+>
+```
+
+`UserButton` and `OrganizationSwitcher` follow the WAI-ARIA menu button pattern: Enter, Space and the
+arrow keys open the menu with focus inside; arrows wrap; Home and End jump; typing a letter finds an
+item; Escape closes and returns focus. Organisations are radio items with the current one checked,
+and a switch is announced in a live region. Avatars fall back from the picture to initials to an icon.
+
+## 🖥️ Server rendering and Server Components
+
+- **`initialSession`** makes the server's HTML and the first client render agree, signed in or out,
+  with no request on load.
+- **`"use client"` is on each module that needs it**, not on the entry, so a Server Component can
+  import `QeetIDError`, `VERSION`, the types and `@qeet-id/react/contract` directly, and render
+  `<QeetIDProvider>` with plain-data props.
+- **Callbacks** (`onSessionChange`, …) are functions, so set them from a Client Component.
+- **No module-level state**: a server rendering many people's pages never mixes their sessions.
+
+## 🧪 Testing your app
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { QeetIDTestProvider, createTestSession } from "@qeet-id/react/testing";
+
+it("hides approvals from people who can't approve", () => {
+  render(
+    <QeetIDTestProvider session={createTestSession({ permissions: ["invoice.read"] })}>
+      <InvoiceToolbar />
+    </QeetIDTestProvider>,
+  );
+  expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
+});
+```
+
+| Prop | |
+|:--|:--|
+| `session` | A `Session` (from `createTestSession`), or `null` for signed out (the default) |
+| `status` | `"loading"` or `"unavailable"` instead |
+| `onNavigate` | Receives every navigation (sign-in URL, sign-out redirect) instead of the page moving |
+| `onSwitchOrganization` | Answers a switch with a session, or throws to fail it |
+| `signOutError` | Fails sign-out with this error |
+
+## 🔐 Security
+
+| | |
+|:--|:--|
+| 🔑 **No tokens** | Nothing in script, `localStorage` or `sessionStorage`; no `getToken()` |
+| 🛡️ **CSRF** | Every request sends `X-Qeet-ID-Request: 1`; servers refuse a `POST` without it |
+| ↩️ **Return paths** | Same-origin paths only: other sites, `//host`, `/\host` and other schemes are refused on both sides |
+| 🔗 **Navigation** | Only `http(s)` URLs and paths are followed; a `javascript:` URL never runs |
+| 🧾 **CSP** | No inline styles, scripts or `eval` |
+| 🖼️ **Avatars** | Loaded with `referrerPolicy="no-referrer"` |
+
+## 🚨 Errors
+
+Every failure is a `QeetIDError`. Branch on `code`, never on `message`:
+
+| `code` | When |
+|:--|:--|
+| `network_error` | no answer came |
+| `session_unavailable` | your server couldn't reach Qeet ID (503) |
+| `csrf_rejected` | a request without the CSRF header, or from another site (403) |
+| `organization_switch_refused` · `organization_switch_unavailable` | the switch was refused (403) or isn't possible (501) |
+| `not_signed_in` · `invalid_request` · `method_not_allowed` · `internal_error` | as their names say |
+| `invalid_response` | the answer wasn't the contract's JSON, usually a route that isn't mounted |
+| `http_<status>` | an answer without a code (`http_404`: no route at that path) |
+| `access_denied`, `login_required`, `invalid_state`, … | the callback reported a failed sign-in |
+
+## 🛠️ TypeScript and modules
+
+| Import | Use it in | Contents |
+|:--|:--|:--|
+| `@qeet-id/react` | Client and Server Components | provider, hooks, components, `QeetIDError`, `VERSION`, types |
+| `@qeet-id/react/contract` | anywhere, servers included | `Session` and the other contract types, `sessionRoutes`, `safeReturnTo`, `parseSession`, `CSRF_HEADER` |
+| `@qeet-id/react/testing` | tests and stories | `QeetIDTestProvider`, `createTestSession` |
+| `@qeet-id/react/styles.css` | your CSS entry | the optional stylesheet |
+
+ES module and CommonJS builds with their own declarations, one file per module, `sideEffects` limited
+to the stylesheet. Checked with `publint` and Are the Types Wrong in every resolution mode.
+
+## 📚 Learn more
+
+| | |
+|:--|:--|
+| 📜 [Session contract](docs/session-contract.md) | The routes, JSON and rules your server implements, and where each field comes from in Qeet ID |
+| 🏗️ [Architecture](docs/architecture/ARCHITECTURE.md) | How the store, provider, hooks and components fit |
+| 🧭 [Engineering practices](docs/engineering-practices.md) | What comparable SDKs do, what this one ships and why, with sources |
+| 🗂️ [Design decisions](docs/design-decisions) | ADR-0001 to ADR-0005 |
+| 🔭 [Future work](docs/FUTURE.md) | What waits for Qeet ID, and what may come |
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). `bun install`, then `bun run verify` runs every check.
+
+## 🛡️ Reporting a vulnerability
+
+Email **security@qeet.in**; see [SECURITY.md](SECURITY.md).

@@ -6,107 +6,96 @@ here and add nothing architectural.
 
 ## What this repository is
 
-`@qeet-id/react` v0.1.0 — React hooks, components and prebuilt widgets for Qeet ID. React 18 or 19
-as a peer, pnpm, **zero runtime dependencies**, built by Vite in library mode.
+The **React SDK for Qeet ID**, `@qeet-id/react`, for the browser: a provider, hooks and components for
+apps whose people sign in on Qeet ID's hosted pages and whose session lives on the app's own server.
+React 18.3 or 19 as the only peer, **zero runtime dependencies**, bun and Biome, TypeScript 7, built by
+tsdown into ES module and CommonJS files with declarations. Not yet published.
 
-> **This is a browser client, not a management SDK.** It is fundamentally different from
-> `qeet-id-go` and `qeet-id-node`: **cookie + CSRF, never an API key**, and it **never sees a
-> token**. Do not port patterns across without reading
-> [docs/llm/boundaries.md](docs/llm/boundaries.md).
-
-## Context hierarchy
-
-```text
-qeet-context (L0)  →  qeet-id-context (L1)  →  qeet-id-server (the contract)
-                                            →  qeet-id-react (L2 — this repository)
-```
+It owns **the session contract** (`src/contract.ts`, [docs/session-contract.md](docs/session-contract.md))
+that `qeet-id-nextjs` and `qeet-id-tanstack` implement on the server.
 
 ## Read before changing code
 
 | File | For |
-|---|---|
+| :-- | :-- |
 | [qeet-repo.yml](qeet-repo.yml) | Machine-readable identity |
+| [docs/session-contract.md](docs/session-contract.md) | The routes, JSON and rules the server SDKs implement |
 | [docs/llm/architecture-map.md](docs/llm/architecture-map.md) | "Where is X?" |
 | [docs/llm/context.md](docs/llm/context.md) | How this SDK works |
-| [docs/llm/boundaries.md](docs/llm/boundaries.md) | Ownership; **cross-SDK differences** |
-| [docs/llm/workflows.md](docs/llm/workflows.md) | Adding a hook, component or widget |
+| [docs/llm/boundaries.md](docs/llm/boundaries.md) | What it owns, and what it must not touch |
+| [docs/llm/workflows.md](docs/llm/workflows.md) | Adding a session field, a hook or a component; releasing |
+| [docs/engineering-practices.md](docs/engineering-practices.md) | The practices followed, with sources |
 
-Repository ADRs: `docs/design-decisions/` — three, all binding.
+Decisions: `docs/design-decisions/` (ADR-0001 to ADR-0005), all binding.
 
 ## Rules
 
-### 1. Never read or write the session token
-The session lives in an **HttpOnly** cookie (`qe_ls`). This SDK cannot read it and must never try.
-`src/utils/storage.ts` is for **non-sensitive preferences only** — never a credential.
-
-### 2. Never wrap a fictional endpoint — ADR-0002
-There are **deliberately no** `usePermission` / `useRole` / `useUsers` / `useOrganizations` hooks and
-no `AuthorizationError`, because the backend has no session-authenticated endpoint for them. Only
-the API-key management API can resolve those, and a browser must not hold an API key.
-**Verify a route exists in `qeet-id-server` before adding a client method.**
-
-### 3. Two provider modes — ADR-0001
-- **Redirect** (no `apiUrl`): `client = null`; buttons navigate to `loginUrl`/`signUpUrl`/`logoutUrl`.
-  Flow hooks and widgets throw `"requires apiUrl on <QeetIDProvider>"`.
-- **Embedded** (`apiUrl` set): hooks and `<SignIn/>`/`<SignUp/>` drive the API directly.
-
-`useAuth`, `useUser`, `<SignedIn>`, `<SignedOut>` work in **both** — they read `initialState`.
-
-### 4. `"use client"` on every hook and JSX file
-Required by `CONTRIBUTING.md` for RSC consumers.
-
-### 5. Three sanctioned hook shapes
-Context-read · flow-with-a `status` union · data-fetching-with `isLoaded`. Match one; do not invent
-a fourth.
-
-### 6. One component per file, named after its export — ADR-0003
-The `Button` suffix is kept (`SignInButton`). This deliberately mirrors Clerk's surface.
-
-### 7. Widgets take `appearance`
-Style through `applyAppearance` and the `--qeetid-*` CSS variables. Never hardcode colours.
-
-### 8. camelCase the wire — and know it is deliberate
-`src/client/client.ts` maps snake_case API responses to camelCase domain types
-(`client_name` → `clientName`). **The Node SDK's ADR-0004 does the opposite on purpose.** Do not
-"harmonise" them.
-
-### 9. Never add an API-key path
-No `Authorization: ApiKey` header, ever. A browser must not hold a server credential.
+1. **Never call Qeet ID and never hold a token** (ADR-0001). The browser talks only to the app's own
+   `{basePath}/*` routes. No `getToken()`, no `Authorization` header, nothing in `localStorage` or
+   `sessionStorage`. The embedded sign-in, MFA, passkey and profile flows were removed on purpose; do
+   not bring them back.
+2. **No server-SDK machinery in the browser**: no retry or backoff engine, idempotency keys,
+   pagination or management-API wrappers.
+3. **The contract is a published API** (ADR-0002). Every session field must trace to Qeet ID's ID
+   token, userinfo or a management route; never invent one. Changing a route, field or code breaks
+   the server SDKs.
+4. **Never weaken the browser's defences**: the `X-Qeet-ID-Request` header on every request, POST for
+   anything that changes state, `safeReturnTo` for every return path, http(s)-only navigation, no
+   inline styles or injected elements (CSP).
+5. **`"use client"` exactly where React state is used** (ADR-0004): every module calling a hook or
+   `createContext` starts with it; `index.ts`, `contract.ts`, `errors.ts`, `version.ts`, `testing.ts`
+   and `provider/localization.ts` never do. `test/package.test.ts` checks the build.
+6. **No module-level session state** (ADR-0005): one store per provider; constructing it has no side
+   effects.
+7. **React 18.3 and 19**: no 19-only API (`use`, `<Context value>`, ref as a prop). Every rendering test
+   runs on both.
+8. **No design-system dependency** (ADR-0003): plain elements, BEM classes, `className`/`classNames`/
+   `unstyled`; styles only in `src/styles.css` with `var(--qeet-id-…, var(--qx-…, default))`.
+9. **Accessible by default**: WAI-ARIA APG patterns, every string from `localization`, logical CSS for
+   right to left, axe in the tests.
+10. **Roles and permissions are display hints**: say so wherever they appear.
 
 ## Commands
 
 ```bash
-pnpm install
-pnpm check      # typecheck + lint + test — THE gate
-pnpm build      # vite lib mode + dts
-pnpm test       # vitest, jsdom
-pnpm typecheck
-pnpm lint
-pnpm format
+bun install
+bun run verify          # install React 18 for its tests + typecheck + Biome + tests + build + publint + attw — the gate
+bun run build           # tsdown
+bun run test            # vitest run: React 19 and React 18.3 projects
+bun run typecheck       # tsc --noEmit (TypeScript 7)
+bun run check           # Biome lint and format check
+bun run check:package   # publint --strict && attw --pack .
 ```
 
-Also `pnpm dev` (vite build --watch), `pnpm test:watch`, `pnpm test:coverage`, `pnpm lint:fix`.
+Also `bun run install:react-18`, `bun run dev`, `bun run test:watch`, `bun run test:coverage`,
+`bun run lint`, `bun run lint:fix`, `bun run format`.
 
 ## What CI enforces
 
-`ci.yml` (Node 18.17/20/22/24): install, typecheck, **lint**, build, `test:coverage` — note
-`qeet-id-node`'s `ci.yml` omits lint; this one includes it. `lint.yml`: eslint + prettier check.
-`security.yml`: `pnpm audit` + gitleaks. `codeql.yml`: JS/TS. `release.yml`: tag `v*` → npm publish.
+`ci.yml` on Node.js 22, 24 and 26: install (and the React 18 test install), typecheck, build, tests
+with coverage, package checks. `lint.yml`: `bun run check`. `security.yml`: `bun audit
+--audit-level=high` and gitleaks. `codeql.yml`.
+`version.yml` bumps the patch in `package.json` on every pull request into `main` (raise minor or major by
+hand). `release.yml` runs on every push to `main`: when that version is not on npm yet, it runs the gate,
+publishes with provenance, then tags `vX.Y.Z` and opens a GitHub Release; otherwise it does nothing.
+`rollback.yml` points the npm `latest` dist-tag back at an earlier version.
+
+## Branches
+
+Two long-lived branches: `develop`, where work lands, and `main`, what is released. Changes reach
+`main` only by a pull request from `develop`. There are no release branches: a version is a `vX.Y.Z`
+tag, made by `release.yml` when a pull request is merged into `main`.
 
 ## Before you finish
 
 ```bash
-pnpm check
+bun run verify
 git diff
 ```
 
-## Distribution status — know this
-
-**`@qeet-id/react` is not on npm — the registry returns 404**, and there is no release tag. There is
-also **no version export** (`src/version.ts` does not exist) even though `SECURITY.md` asks reporters
-for "the SDK version". See `qeet-id-context/DRIFT-REGISTER.md` QID-009.
-
 ## Escalate rather than proceed
 
-Storing a token · adding an API-key path · weakening CSRF · adding a hook for an endpoint that does
-not exist · changing the two-mode contract · anything requiring another repository.
+Holding a token or calling Qeet ID from the browser · changing the session contract · weakening the
+CSRF header, the return-path check or CSP safety · a runtime dependency · a design-system dependency ·
+renaming or removing an export · anything requiring another repository · the package name or first
+published version.

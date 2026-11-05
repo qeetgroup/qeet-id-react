@@ -10,25 +10,25 @@ CLAUDE.md  →  AGENTS.md  →  docs/llm/*
 ## Canonical context
 
 | File | For |
-|---|---|
+| :-- | :-- |
 | [qeet-repo.yml](qeet-repo.yml) | Machine-readable repository identity |
 | [AGENTS.md](AGENTS.md) | **Rules, commands, what CI enforces** |
+| [docs/session-contract.md](docs/session-contract.md) | The contract the server SDKs implement |
 | [docs/llm/context.md](docs/llm/context.md) | How this repository actually works |
 | [docs/llm/boundaries.md](docs/llm/boundaries.md) | What it owns, and what it must not touch |
 | [docs/llm/workflows.md](docs/llm/workflows.md) | Step-by-step for common changes |
 | [docs/llm/architecture-map.md](docs/llm/architecture-map.md) | "Where is X?" — fastest path to a file |
 
 Parent context: **L0** `qeetgroup/qeet-context` · **L1** `qeetgroup/qeet-id-context`.
-Read them when a task needs organization or product understanding; this repository does not restate them.
 
 ## The things most likely to trip you up here
 
-1. **Never read, write or store the session token.** It is an HttpOnly cookie. `src/utils/storage.ts` is preferences only.
-2. **Never add an `Authorization: ApiKey` path.** A browser must not hold a server credential.
-3. **Never wrap a fictional endpoint** (ADR-0002). There are deliberately no `usePermission`/`useRole`/`useUsers` hooks — the backend has no session-authenticated endpoint for them.
-4. **Redirect mode must keep working without `apiUrl`** (ADR-0001); `useAuth`/`useUser`/`<SignedIn>`/`<SignedOut>` work in both modes.
-5. **Never weaken CSRF.** Mutations echo `qe_csrf` as `X-CSRF-Token`; names must match `qeet-id-server` and `qeet-id-login`.
-6. This SDK maps wire fields to **camelCase** — `qeet-id-node`'s ADR-0004 deliberately does the opposite. Do not harmonise them.
+1. **The browser never calls Qeet ID and never holds a token** (ADR-0001). Only `{basePath}/*` on the app's own origin.
+2. **The session contract is shared with the server SDKs** (ADR-0002). No invented fields; changes ripple.
+3. **`"use client"` only on modules that use hooks or context** (ADR-0004); the entries and the contract never.
+4. **No module-level session state** (ADR-0005); the store is per provider and side-effect free until `start()`.
+5. **React 18.3 and 19**: no 19-only API; `bun run test` runs both.
+6. **No inline styles**; styles live in `src/styles.css` (ADR-0003).
 
 ## Working style
 
@@ -39,11 +39,11 @@ Read them when a task needs organization or product understanding; this reposito
 ## Finishing a change
 
 ```bash
-pnpm check
+bun run verify
 git diff
 ```
 
 ## Escalate rather than proceed
 
-Stop and report if a task would weaken a security control, change a published contract, or require
-modifying another repository. Cross-repository impact: `qeet-id-context/CHANGE-MATRIX.md`.
+Stop and report if a task would weaken a security control, change the session contract, or require
+modifying another repository.
