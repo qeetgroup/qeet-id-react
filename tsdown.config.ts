@@ -22,7 +22,7 @@ export default defineConfig({
   define: { __QEET_ID_SDK_VERSION__: JSON.stringify(version) },
   inputOptions: {
     // Rolldown warns that a module-level "use client" may not survive bundling.
-    // Unbundled output keeps every module's directive.
+    // Unbundled output keeps every module's directive (test/package.test.ts).
     onLog(level, log, handler) {
       if (log.code === "MODULE_LEVEL_DIRECTIVE" && log.message.includes('"use client"')) return;
       handler(level, log);

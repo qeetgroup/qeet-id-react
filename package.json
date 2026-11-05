@@ -102,11 +102,12 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "check": "biome check --diagnostic-level=error .",
+    "install:react-18": "bun install --cwd test/react-18 --frozen-lockfile",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check:package": "publint --strict && attw --pack . --exclude-entrypoints ./styles.css",
-    "verify": "bun run typecheck && bun run check && bun run test && bun run build && bun run check:package",
+    "verify": "bun run install:react-18 && bun run typecheck && bun run check && bun run test && bun run build && bun run check:package",
     "prepublishOnly": "bun run verify"
   },
   "devDependencies": {
