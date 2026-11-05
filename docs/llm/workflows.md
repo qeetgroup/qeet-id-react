@@ -46,6 +46,9 @@ No services are needed: tests stub `fetch`.
 
 ## Release
 
-Merge `develop` into `main` by a pull request. Run **Actions › Release › Run workflow** on `main` with
-`patch`, `minor` or `major`: it runs the gate, publishes to npm with provenance, commits the version
-and tags it. Merging never publishes by itself.
+Open a pull request from `develop` into `main`: `version.yml` bumps the patch in `package.json` on the
+PR branch (for a minor or major, set the version yourself). Merging it runs `release.yml`: when npm
+does not have that version yet, it runs the gate, publishes with provenance, then tags `vX.Y.Z` and
+opens a GitHub Release. A push whose version is already on npm releases nothing, so re-running is
+safe. A bad release is not unpublished: `rollback.yml` points `latest` back at a good version, then
+release a fix.

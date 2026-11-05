@@ -6,10 +6,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-A rebuild of the whole SDK for hosted login. People sign in, sign up, do MFA and passkeys on Qeet ID's
-hosted pages; the app's own server keeps the tokens; this package renders the session that server
-reports. The package has never been published, so these breaking changes ship without a major
-version.
+## [0.1.0] — 2026-11-05
+
+The first published version: a rebuild of the whole SDK for hosted login. People sign in, sign up, do
+MFA and passkeys on Qeet ID's hosted pages; the app's own server keeps the tokens; this package
+renders the session that server reports. The 0.1.0 draft below was never published, so these breaking
+changes against it ship without a major version.
 
 ### Added
 
@@ -72,8 +74,8 @@ version.
 - Built with tsdown and TypeScript 7 (was Vite library mode with API Extractor on TypeScript 6);
   `publint` and Are the Types Wrong are part of `bun run verify`.
 - Every rendering test also runs on React 18.3; accessibility is checked with axe.
-- The release workflow runs only by hand on `main` (patch, minor or major); merging into `main` never
-  publishes by itself.
+- Releases on merge into `main`: `version.yml` bumps the patch on the pull request, and `release.yml`
+  publishes a version npm does not have yet, then tags it and opens a GitHub Release.
 
 ### Removed
 
@@ -105,9 +107,9 @@ version.
 - No inline styles, scripts or `eval`, so a strict Content-Security-Policy needs no exception.
 - Avatars load with `referrerPolicy="no-referrer"`.
 
-## [0.1.0] — 2026-07-10
+## 0.1.0 draft — 2026-07-10 (never published)
 
-Initial release.
+The first draft.
 
 ### Added
 
@@ -167,4 +169,5 @@ early drafts were deliberately **not** built —
 session-authenticated endpoint to back them; see
 the ADR of that time (since replaced) and docs/FUTURE.md.
 
+[Unreleased]: https://github.com/qeetgroup/qeet-id-react/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/qeetgroup/qeet-id-react/releases/tag/v0.1.0
