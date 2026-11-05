@@ -7,7 +7,7 @@ const { version } = JSON.parse(readFileSync(new URL("./package.json", import.met
 // source module: each module keeps its own "use client" directive, and
 // bundlers drop what an app doesn't import.
 export default defineConfig({
-  entry: ["src/index.ts", "src/contract.ts"],
+  entry: ["src/index.ts", "src/contract.ts", "src/testing.ts"],
   format: ["esm", "cjs"],
   platform: "neutral",
   target: "es2022",

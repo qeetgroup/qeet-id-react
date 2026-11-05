@@ -14,7 +14,8 @@
  *
  * This module has no "use client": each component and hook module carries its
  * own, so `QeetIDError`, `VERSION` and the types stay importable from Server
- * Components. The session contract is `@qeet-id/react/contract`.
+ * Components. The session contract is `@qeet-id/react/contract`; the test
+ * provider is `@qeet-id/react/testing`.
  *
  * @packageDocumentation
  */
