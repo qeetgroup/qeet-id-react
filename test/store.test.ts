@@ -117,7 +117,7 @@ describe("SessionStore: checks", () => {
   });
 
   it("checks when the tab regains focus, at most once in five seconds", async () => {
-    vi.useFakeTimers({ now: new Date("2026-11-05T10:00:00Z") });
+    vi.useFakeTimers({ now: new Date("2099-11-05T10:00:00Z") });
     try {
       const { store, getSession } = setup({ initialSession: meera });
       const stop = store.start();
@@ -208,7 +208,7 @@ describe("SessionStore: checks", () => {
 
 describe("SessionStore: expiry and revocation", () => {
   beforeEach(() => {
-    vi.useFakeTimers({ now: new Date("2026-11-05T21:00:00Z") });
+    vi.useFakeTimers({ now: new Date("2099-11-05T21:00:00Z") });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -228,7 +228,7 @@ describe("SessionStore: expiry and revocation", () => {
   });
 
   it("reschedules when the server renews the session", async () => {
-    const renewed: Session = { ...meera, expiresAt: "2026-11-05T22:30:00.000Z" };
+    const renewed: Session = { ...meera, expiresAt: "2099-11-05T22:30:00.000Z" };
     const { store, getSession } = setup(
       { initialSession: meera },
       { getSession: vi.fn().mockResolvedValueOnce(renewed).mockResolvedValue(null) },
@@ -243,7 +243,7 @@ describe("SessionStore: expiry and revocation", () => {
   });
 
   it("asks again a minute later, never in a loop, when this browser's clock is ahead of the server's", async () => {
-    const past: Session = { ...meera, expiresAt: "2026-11-05T20:00:00.000Z" };
+    const past: Session = { ...meera, expiresAt: "2099-11-05T20:00:00.000Z" };
     const { store, getSession } = setup({ initialSession: past }, { getSession: async () => JSON.parse(JSON.stringify(past)) });
     const stop = store.start();
     await vi.advanceTimersByTimeAsync(0);
@@ -278,7 +278,7 @@ describe("SessionStore: expiry and revocation", () => {
   });
 
   it("schedules nothing when stopped, and caps a far expiry at the longest timer", async () => {
-    const far: Session = { ...meera, expiresAt: "2099-01-01T00:00:00.000Z" };
+    const far: Session = { ...meera, expiresAt: "2100-01-01T00:00:00.000Z" };
     const { store, getSession } = setup({ initialSession: far });
     expect(vi.getTimerCount()).toBe(0);
     const stop = store.start();
@@ -553,7 +553,7 @@ describe("helpers", () => {
     expect(share(null, meera)).toBe(meera);
     expect(share(meera, meera)).toBe(meera);
     expect(share(meera, JSON.parse(JSON.stringify(meera)))).toBe(meera);
-    const moved = share(meera, { ...meera, expiresAt: "2026-11-06T09:00:00.000Z" });
+    const moved = share(meera, { ...meera, expiresAt: "2099-11-06T09:00:00.000Z" });
     expect(moved).not.toBe(meera);
     expect(moved.user).toBe(meera.user);
   });
