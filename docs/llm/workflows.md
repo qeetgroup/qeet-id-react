@@ -46,9 +46,9 @@ No services are needed: tests stub `fetch`.
 
 ## Release
 
-Open a pull request from `develop` into `main`: `version.yml` bumps the patch in `package.json` on the
-PR branch (for a minor or major, set the version yourself). Merging it runs `release.yml`: when npm
-does not have that version yet, it runs the gate, publishes with provenance, then tags `vX.Y.Z` and
+Raise the version in `package.json` (patch, minor or major) on `develop`, then open a pull request from
+`develop` into `main`; Verify runs on it. Merging it runs `release.yml`: when npm
+does not have that version yet, it publishes with provenance, then tags `vX.Y.Z` and
 opens a GitHub Release. A push whose version is already on npm releases nothing, so re-running is
-safe. A bad release is not unpublished: `rollback.yml` points `latest` back at a good version, then
+safe. A bad release is not unpublished: `npm dist-tag add <package>@<version> latest` points `latest` back at a good version, then
 release a fix.

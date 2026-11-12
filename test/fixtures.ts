@@ -15,7 +15,7 @@ export const meera: Session = {
   organization: { id: "5f0c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f", name: "Brightleaf Foods" },
   roles: ["Finance approver"],
   permissions: ["invoice.approve", "invoice.read"],
-  expiresAt: "2026-11-05T21:30:00.000Z",
+  expiresAt: "2099-11-05T21:30:00.000Z",
 };
 
 /** Arjun, signed in to Brightleaf Foods with no name, picture, roles or permissions. */
@@ -24,5 +24,5 @@ export const arjun: Session = {
   organization: { id: "5f0c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f", name: null },
   roles: [],
   permissions: [],
-  expiresAt: "2026-11-05T21:30:00.000Z",
+  expiresAt: "2099-11-05T21:30:00.000Z",
 };
