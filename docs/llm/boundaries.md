@@ -19,7 +19,7 @@
 | Users, roles, organisations, permissions management | `qeet-id-node` (API key, server only) |
 | What claims a token carries | `qeet-id-server` |
 | The design system | Qeetrix — this SDK does **not** depend on it; its stylesheet only falls back to `--qx-*` |
-| Organisation / product standards | `qeet-context` (L0) / `qeet-id-context` (L1) |
+| Organisation / product standards | `qeet-context` (L0) / `qeet-id-files` (L1) |
 
 ## Consumes
 

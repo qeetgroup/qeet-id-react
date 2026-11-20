@@ -15,7 +15,7 @@ CommonJS files, one per source module.
 ## Context inheritance
 
 ```text
-qeet-context (L0)  →  qeet-id-context (L1)  →  qeet-id-server (Qeet ID)
+qeet-context (L0)  →  qeet-id-files (L1)  →  qeet-id-server (Qeet ID)
                                             →  qeet-id-react (L2 — this document)
                                                  ↑ implemented on the server by qeet-id-nextjs, qeet-id-tanstack
 ```
