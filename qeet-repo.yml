@@ -29,7 +29,7 @@ runtime:
   runtime_deps: none
   build: tsdown              # ES module (.mjs/.d.mts) + CommonJS (.cjs/.d.cts), one file per module
 
-module: {name: "@qeet-id/react", version: "0.1.0"}
+module: {name: "@qeet-id/react", version: "0.2.0"}
 
 entries:
   ".":            provider, hooks, components, QeetIDError, VERSION, types   # "use client" per module

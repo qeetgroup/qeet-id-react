@@ -141,10 +141,10 @@ value against this shape (a missing nullable field becomes `null`, so an older s
 | `user.emailVerified` | boolean | `email_verified`, with the `email` scope | `false` when `email` is `null` |
 | `user.name` | string \| null | `name`, with the `profile` scope | `null` when the person has no display name |
 | `user.picture` | string \| null | `picture`, with the `profile` scope | `null` when the person has no picture |
-| `organization` | object \| null | the ID token's `tenant_id` | Qeet ID always sends `tenant_id` today; `null` is for a session in no organisation |
-| `organization.id` | string | `tenant_id` | |
-| `organization.name` | string \| null | `GET /v1/tenants/{tenantID}` → `name`, with the app's API key | `null` when the server doesn't look it up |
-| `roles` | string[] | `GET /v1/users/{userID}/tenants/{tenantID}/permissions` → each `grants[].role_name`, with the app's API key (`role.read`) | role **names**; `[]` when not looked up |
+| `organization` | object \| null | the ID token's `organization_id` | Qeet ID always sends `organization_id` today; `null` is for a session in no organization |
+| `organization.id` | string | `organization_id` | |
+| `organization.name` | string \| null | `GET /v1/organizations/{organizationID}` → `name`, with the app's API key | `null` when the server doesn't look it up |
+| `roles` | string[] | `GET /v1/users/{userID}/organizations/{organizationID}/permissions` → each `grants[].role_name`, with the app's API key (`role.read`) | role **names**; `[]` when not looked up |
 | `permissions` | string[] | the same call's `permissions` | permission keys such as `invoice.approve`; `[]` when not looked up |
 | `expiresAt` | string | the app's session | when the app's session ends unless renewed, ISO 8601 in UTC; at most the refresh token's life |
 
@@ -196,18 +196,18 @@ contract's JSON (often a route that isn't mounted, answered by the app's HTML fa
 
 ## What Qeet ID provides
 
-Checked against `qeet-id-server` on `fix/server-release-1.0`.
+Checked against `qeet-id-server` on `develop` (3398fda6).
 
 | Fact | Where |
 |:--|:--|
-| The ID token carries `iss`, `sub`, `aud`, `exp`, `iat`, `tenant_id`, `nonce` when sent, `auth_time`, `sid`, and the scope claims | `internal/federation/oidc/token.go:757` (`signIDToken`) |
+| The ID token carries `iss`, `sub`, `aud`, `exp`, `iat`, `organization_id`, `nonce` when sent, `auth_time`, `sid`, and the scope claims | `internal/federation/oidc/token.go:71` (`signIDToken`) |
 | The scope claims: `email` → `email`, `email_verified`; `profile` → `name`, `picture`, `locale`, `updated_at`; `phone` → `phone_number`, `phone_number_verified`; `name` and `picture` only when set | `internal/federation/oidc/userinfo.go:18`, `:40` |
-| `/v1/oauth/userinfo` answers `sub`, `tenant_id` and the same scope claims | `internal/federation/oidc/userinfo.go:87` |
-| `/v1/oauth/authorize` takes `client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`, `code_challenge` (S256, required), `nonce`, `prompt`, `max_age`, `resource`: no organisation, login hint or sign-up hint | `api/openapi/federation.yaml` (`/v1/oauth/authorize`); `internal/federation/oidc/http_authorize.go:50` |
-| An application's code, and so its ID token's `tenant_id`, is always the application's own organisation; a person who isn't a member is refused | `internal/federation/oidc/authorize.go:64`, `:95` |
-| An application's access token is refused everywhere but `/v1/oauth/userinfo`, so it can't call `/v1/me/organizations` or `/v1/auth/switch-tenant` | `internal/bootstrap/router.go:266`, `:440` |
-| An organisation's name: `GET /v1/tenants/{tenantID}`, with an API key | `api/openapi/management.yaml` (`/v1/tenants/{tenantID}`) |
-| A person's permissions and the roles granting them in an organisation: `GET /v1/users/{userID}/tenants/{tenantID}/permissions`, with an API key (`role.read`) | `api/openapi/auth.yaml` (`AuthzGrantStep.role_name`) |
+| `/v1/oauth/userinfo` answers `sub`, `organization_id` and the same scope claims | `internal/federation/oidc/userinfo.go:111` |
+| `/v1/oauth/authorize` takes `client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`, `code_challenge` (S256, required), `nonce`, `prompt`, `max_age`, `resource`: no organisation, login hint or sign-up hint | `api/openapi/federation.yaml` (`/v1/oauth/authorize`); `internal/federation/oidc/http_authorize.go:68` |
+| An application's code, and so its ID token's `organization_id`, is always the application's own organization; a person who isn't a member is refused | `internal/federation/oidc/authorize.go:64`, `:96` |
+| An application's access token is refused everywhere but `/v1/oauth/userinfo`, so it can't call `/v1/me/organizations` or `/v1/auth/switch-organization` | `internal/bootstrap/router.go:268`, `:430` |
+| An organization's name: `GET /v1/organizations/{organizationID}`, with an API key | `api/openapi/identity.yaml` (`/v1/organizations/{organizationID}`) |
+| A person's permissions and the roles granting them in an organization: `GET /v1/users/{userID}/organizations/{organizationID}/permissions`, with an API key (`role.read`) | `api/openapi/access.yaml` (`AuthzGrantStep.role_name`) |
 | RP-initiated sign-out: `/v1/oauth/logout` with `id_token_hint`, `client_id`, `post_logout_redirect_uri`, `state` | `api/openapi/federation.yaml` (`/v1/oauth/logout`) |
 
 So, today: **`organization` is fixed to the application's organisation, `organization` and

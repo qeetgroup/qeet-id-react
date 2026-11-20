@@ -1,6 +1,6 @@
 {
   "name": "@qeet-id/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React provider, hooks and components for Qeet ID: people sign in on Qeet ID's hosted pages, and the session lives on your own server.",
   "license": "MIT",
   "author": "Qeet Group",
@@ -23,7 +23,7 @@
     "hooks",
     "session",
     "backend-for-frontend",
-    "multi-tenant",
+    "organizations",
     "sdk"
   ],
   "type": "module",

@@ -6,6 +6,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-21
+
+Released with `@qeet-id/node`, `@qeet-id/nextjs` and `@qeet-id/tanstack` 0.2.0, which follow the Qeet ID
+API's rename of tenant to organization. The browser API and the session contract's JSON are unchanged.
+
+### Changed
+
+- **The session's `organization` comes from the `organization_id` claim**, which replaced the ID
+  token's `tenant_id`; the contract's types and [docs/session-contract.md](docs/session-contract.md)
+  say so. Its `name`, `roles` and `permissions` come from `GET /v1/organizations/{organizationID}` and
+  `GET /v1/users/{userID}/organizations/{organizationID}/permissions`. A server SDK must be 0.2.0 or
+  later to fill them from Qeet ID as it is now.
+- The npm keyword `multi-tenant` is `organizations`.
+
 ## [0.1.0] — 2026-11-05
 
 The first published version: a rebuild of the whole SDK for hosted login. People sign in, sign up, do
@@ -169,5 +183,6 @@ early drafts were deliberately **not** built —
 session-authenticated endpoint to back them; see
 the ADR of that time (since replaced) and docs/FUTURE.md.
 
-[Unreleased]: https://github.com/qeetgroup/qeet-id-react/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/qeetgroup/qeet-id-react/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/qeetgroup/qeet-id-react/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/qeetgroup/qeet-id-react/releases/tag/v0.1.0
