@@ -14,7 +14,7 @@
 
 | Not owned | Owner |
 | :-- | :-- |
-| Sign-in, sign-up, MFA, passkeys, consent, account pages | Qeet ID's hosted pages (`qeet-id-login`) |
+| Sign-in, sign-up, MFA, passkeys, consent, account pages | Qeet ID's hosted pages (`qeet-id-hosted`) |
 | Tokens, the code exchange, renewal, the session cookie | the app's server: `qeet-id-nextjs`, `qeet-id-tanstack` |
 | Users, roles, organisations, permissions management | `qeet-id-node` (API key, server only) |
 | What claims a token carries | `qeet-id-server` |
