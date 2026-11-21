@@ -48,7 +48,7 @@ backend-for-frontend pattern instead, so it leaves out everything that hands a t
 | Cross-tab sync | `BroadcastChannel` named after the session route, carrying `{type}` only, no personal data | signing out in one tab signs out every tab; a shared computer isn't left signed in | [MDN: Broadcast Channel API](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API) (Baseline since March 2022) |
 | Callbacks | `onSessionChange`, `onSignOut`, `onError`, read fresh on every event; an exception in one is reported, never breaks the store | apps clear data caches on a user or organisation change and log failures | Kinde `onSuccess`/`onError`; WorkOS `onRefresh` |
 | A failed sign-in is reported | the server adds `?authError=<code>`; the provider reads it once, reports it, and removes it with `history.replaceState`, keeping the router's state | people learn why signing in didn't work instead of landing signed out | Auth0 React `error` after the redirect callback |
-| Switching organisation | `POST switch-organization` returns the new session; other tabs are told; `afterSwitchUrl` loads a page so no cache of the old organisation survives | B2B apps must never show one tenant's data under another's name | [WorkOS `switchToOrganization`](https://github.com/workos/authkit-react); Clerk `afterSelectOrganizationUrl` |
+| Switching organisation | `POST switch-organization` returns the new session; other tabs are told; `afterSwitchUrl` loads a page so no cache of the old organisation survives | B2B apps must never show one organization's data under another's name | [WorkOS `switchToOrganization`](https://github.com/workos/authkit-react); Clerk `afterSelectOrganizationUrl` |
 
 ## React Server Components and packaging
 

@@ -84,7 +84,7 @@ export const MAX_RETURN_TO_LENGTH = 2048;
 export interface Session {
   /** The person who signed in. */
   readonly user: SessionUser;
-  /** The organisation the session is in (the `tenant_id` claim), or `null` when it is in none. */
+  /** The organization the session is in (the `organization_id` claim), or `null` when it is in none. */
   readonly organization: SessionOrganization | null;
   /**
    * The names of the roles the person holds in `organization`, such as
@@ -117,9 +117,9 @@ export interface SessionUser {
   readonly picture: string | null;
 }
 
-/** An organisation (a Qeet ID tenant). */
+/** A Qeet ID organization. */
 export interface SessionOrganization {
-  /** The organisation's id: the `tenant_id` claim. */
+  /** The organization's id: the `organization_id` claim. */
   readonly id: string;
   /** Its name, or `null` when the server doesn't look it up. */
   readonly name: string | null;

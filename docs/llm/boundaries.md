@@ -14,12 +14,12 @@
 
 | Not owned | Owner |
 | :-- | :-- |
-| Sign-in, sign-up, MFA, passkeys, consent, account pages | Qeet ID's hosted pages (`qeet-id-login`) |
+| Sign-in, sign-up, MFA, passkeys, consent, account pages | Qeet ID's hosted pages (`qeet-id-hosted`) |
 | Tokens, the code exchange, renewal, the session cookie | the app's server: `qeet-id-nextjs`, `qeet-id-tanstack` |
 | Users, roles, organisations, permissions management | `qeet-id-node` (API key, server only) |
 | What claims a token carries | `qeet-id-server` |
 | The design system | Qeetrix — this SDK does **not** depend on it; its stylesheet only falls back to `--qx-*` |
-| Organisation / product standards | `qeet-context` (L0) / `qeet-id-context` (L1) |
+| Organisation / product standards | `qeet-context` (L0) / `qeet-id-files` (L1) |
 
 ## Consumes
 
@@ -45,6 +45,6 @@ Qeet ID endpoint, no token, no API key, no storage.**
 
 | Gap | Effect here |
 | :-- | :-- |
-| An application's token can't call `/v1/me/organizations` or `/v1/auth/switch-tenant` (`internal/bootstrap/router.go:266`, `:440`) | the app passes `<OrganizationSwitcher organizations>`; switching answers `501` until Qeet ID supports it |
-| An application's code is always for its own organisation (`internal/federation/oidc/authorize.go:95`) | `signIn({ organization })` is reserved |
+| An application's token can't call `/v1/me/organizations` or `/v1/auth/switch-organization` (`internal/bootstrap/router.go:268`, `:430`) | the app passes `<OrganizationSwitcher organizations>`; switching answers `501` until Qeet ID supports it |
+| An application's code is always for its own organization (`internal/federation/oidc/authorize.go:96`) | `signIn({ organization })` is reserved |
 | `/v1/oauth/authorize` takes no login or sign-up hint | `loginHint` and the `sign-up` route are reserved |
